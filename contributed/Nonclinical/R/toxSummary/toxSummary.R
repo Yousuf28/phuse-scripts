@@ -583,23 +583,30 @@ server <- function(input,output,session) {
         }
       }
       maxFindings <- maxFindings + 1
-      p <- ggplot(plotData,aes(y=SM,x=Study,label=DoseLabel)) + #label=paste(Dose,'mg/kg/day'))) +
-        geom_label(aes(fill=NOAEL),
-                   color='white',
-                   label.padding=unit(0.5,'lines'),
+      
+      ## plot
+      
+      p <- ggplot(plotData,aes(x=SM,y=Study,label=DoseLabel)) + #label=paste(Dose,'mg/kg/day'))) +
+        geom_label(color='white',
+                   fill = ifelse(plotData$NOAEL == TRUE, "#239B56", "black"),
+                   label.padding = unit(0.5,'lines'),
                    fontface='bold',
-                   position = ggstance::position_dodge2v(height = .4,preserve='single',padding=0)) +
+                   position = ggstance::position_dodge2v(height = 0.2,preserve='single',padding=0)) +
         # for position need to modivy position_dodge2v code so that it n (groups) = 1 for all cases
-        geom_text(aes(label=doseFindings),
-                  nudge_x = -.08*maxFindings) +
+        # geom_text(aes(label=doseFindings),
+        #           nudge_x = -.08*maxFindings) +
         # geom_text_repel(aes(label=doseFindings),
         #                 direction='y',nudge_y = -.2) +
-        scale_fill_manual(values=c(rgb(0,0,0),'#239B56')) +
-        scale_y_log10(limits=c(min(plotData$SM/2),max(plotData$SM*2))) +
-        labs(y='Safety Margin',x='Study',title='Summary of Toxicology Studies') +
-        theme_classic(base_size=18) +
-        theme(plot.title=element_text(hjust=0.5)) +
-        guides(fill='none') + coord_flip() + geom_bar(aes(y=SM,x=doseFinding),stat='identity')
+        scale_y_discrete(position = "right")+
+        #scale_fill_manual(values=c(rgb(0,0,0),'#239B56')) +
+        scale_x_log10(limits=c(min(plotData$SM/2),max(plotData$SM*2)), sec.axis = dup_axis()) +
+        labs(x='Safety Margin',title='Summary of Toxicology Studies') +
+        theme_bw(base_size=18) +
+        theme(plot.title=element_text(hjust=0.5),
+              panel.background = element_rect(fill = "#ecf0f5"),
+              plot.background = element_rect(fill = "#ecf0f5"),
+              axis.title.y = element_blank()) +
+        guides(fill='none')
       p
     }
   },height=plotHeight)
