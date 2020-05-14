@@ -4,7 +4,7 @@ library(stringr)
 library(htmltools)
 library(shinydashboard)
 
-# Bugs:
+# Bugs ####
 
 # Project Improvement Ideas:
 # - Add legend to figure that lists dose compared and PK/HED option
@@ -26,7 +26,7 @@ library(shinydashboard)
 
 '%ni%' <- Negate('%in%')
 
-# Save configuration of blankData.rds below for later:
+# # Save configuration of blankData.rds below for later: ####
 
 # Data <- list(
 #   INDnumber = NULL,
@@ -111,18 +111,23 @@ addUIDep <- function(x) {
   attachDependencies(x, c(htmlDependencies(x), list(jqueryUIDep)))
 }
 
+
 values <- reactiveValues()
 values$Application <- NULL
 values$SM <- NULL
 values$selectData <- NULL
+
+# Species Conversion ----
 
 speciesConversion <- c(6.2,1.8,3.1,3.1)
 names(speciesConversion) <- c('Rat','Dog','Monkey','Rabbit')
 
 clinDosingOptions <- c('Start Dose','MRHD','Custom Dose')
 
+# Server function started here (selectData) ----
+
 server <- function(input,output,session) {
-  
+
   output$selectData <- renderUI({
     datasets <- c('blankData.rds',grep('.rds',list.files('Applications/',full.names = T),value=T))
     names(datasets) <- basename(unlist(strsplit(datasets,'.rds')))
@@ -144,6 +149,8 @@ server <- function(input,output,session) {
       ))
     }
   })
+  
+# getData ------
   
   getData <- reactive({
     input$refreshPlot
@@ -188,6 +195,8 @@ server <- function(input,output,session) {
     selectInput('selectStudy','Select Study:',choices=studyList)
   })
   
+  # Clinical information -----
+  
   observeEvent(input$selectData,ignoreNULL = T,{
     Data <- getData()
     clinData <- Data[['Clinical Information']]
@@ -213,6 +222,8 @@ server <- function(input,output,session) {
     }
   })
   
+# Nonclinical data update ------
+  
   observeEvent(input$selectStudy,ignoreNULL = T,{
     Data <- getData()
     studyData <- Data[['Nonclinical Information']][[input$selectStudy]]
@@ -220,6 +231,7 @@ server <- function(input,output,session) {
     updateTextInput(session,'Duration',value=studyData$Duration)
     updateNumericInput(session,'nDoses',value=studyData$nDoses)
     updateNumericInput(session,'nFindings',value=studyData$nFindings)
+    
   })
   
   observeEvent(eventExpr = input$saveStudy, {
@@ -237,14 +249,25 @@ server <- function(input,output,session) {
     names(findingList) <- paste0('Finding',seq(input$nFindings))
     if (input$nFindings > 0) {
       for (i in seq(input$nFindings)) {
+        severity <- list()
+        for (j in seq(input$nDoses)) {
+        severity[[paste0("Dose", j)]] <- input[[paste0("Severity", i, "_", j)]]
+        }
         findingList[[i]] <- list(Finding=input[[paste0('Finding',i)]],
                                  Reversibility = input[[paste0('Reversibility',i)]],
-                                 FindingDoses = input[[paste0('FindingDoses',i)]]
+                                 # FindingDoses = input[[paste0('FindingDoses',i)]],
+                                 Severity = severity
         )
       }
     } else {
       findingList[[1]] <- NULL
     }
+    
+    # Severity data update -----
+    
+    
+    
+    # studyName and data -----
     
     Data <- getData()
     studyName <- paste(input$Species,input$Duration,sep=': ')
@@ -264,6 +287,7 @@ server <- function(input,output,session) {
     input$refreshPlot
   })
   
+
   observeEvent(input$saveClinicalInfo, {
     Data <- getData()
     clinData <- Data[['Clinical Information']]
@@ -288,6 +312,7 @@ server <- function(input,output,session) {
     Data[['Clinical Information']] <- clinData
     saveRDS(Data,values$Application)
   })
+  
   
   observeEvent(input$deleteStudy,{
     Data <- getData()
@@ -315,6 +340,8 @@ server <- function(input,output,session) {
                             selected=studyList,
                             multiple=TRUE,width='100%',options=list(plugins=list('drag_drop','remove_button'))))
   })
+  
+  ## output$Doses -----
   
   output$Doses <- renderUI({
     req(input$selectStudy)
@@ -356,6 +383,8 @@ server <- function(input,output,session) {
     }
   })
   
+  # findings with severity -----
+  
   output$Findings <- renderUI({
     req(input$selectStudy)
     if (input$selectStudy=='New Study') {
@@ -367,13 +396,16 @@ server <- function(input,output,session) {
             textInput(paste0('Finding',I),paste0('Finding ',I,':'))
           } else if (i %% numerator == 2) {
             radioButtons(paste0('Reversibility',I),'Reversibility:',
-                         choiceNames=c('Reversible [Rev]','Not Reversible [NR]','Partially Reversible [PR]','Not Assessed'),
+                         choiceNames=c('Reversible [Rev]','Not Reversible [NR]',
+                                       'Partially Reversible [PR]','Not Assessed'),
                          choiceValues=c('[Rev]','[NR]','[PR]',''))
           } else {
             lapply(1:input$nDoses, function(j) {
               if ((i %% numerator == 2+j)|((i %% numerator == 0)&(j==input$nDoses))) {
-                selectInput(inputId = paste0('Severity',I,'_',j),label = paste0('Select Severity at Dose ',j),
-                            choices = c('Absent','Present','Minimal','Mild','Moderate','Marked','Severe'))
+                selectInput(inputId = paste0('Severity',I,'_',j),
+                            label = paste0('Select Severity at Dose ',j),
+                            choices = c('Absent','Present','Minimal',
+                                        'Mild','Moderate','Marked','Severe'))
               }
             })
             
@@ -415,10 +447,12 @@ server <- function(input,output,session) {
         lapply(1:(3*input$nFindings), function(i) {
           I <- ceiling(i/numerator)
           if (i %% numerator == 1) {
-            textInput(paste0('Finding',I),paste0('Finding ',I,':'),studyData$Findings[[paste0('Finding',I)]]$Finding)
+            textInput(paste0('Finding',I),paste0('Finding ',I,':'),
+                      studyData$Findings[[paste0('Finding',I)]]$Finding)
           } else if (i %% numerator == 2) {
             radioButtons(paste0('Reversibility',I),'Reversibility:',
-                         choiceNames=c('Reversible [Rev]','Not Reversible [NR]','Partially Reversible [PR]','Not Assessed'),
+                         choiceNames=c('Reversible [Rev]','Not Reversible [NR]',
+                                       'Partially Reversible [PR]','Not Assessed'),
                          choiceValues=c('[Rev]','[NR]','[PR]',''),
                          selected=studyData$Findings[[paste0('Finding',I)]]$Reversibility)
           } else {
@@ -428,7 +462,8 @@ server <- function(input,output,session) {
               if ((i %% numerator == 2+j)|(i%%numerator==0)) {
                 print('worked!')
                 selectInput(paste0('Severity',I,'_',j),paste0('Select Severity at Dose ',I),
-                            choices = c('Absent','Present','Minimal','Mild','Moderate','Marked','Severe'))
+                            choices = c('Absent','Present','Minimal',
+                                        'Mild','Moderate','Marked','Severe'))
                 break
               }
             }
@@ -453,6 +488,8 @@ server <- function(input,output,session) {
       }
     }
   })
+  
+  # Create PlotData -----
   
   getPlotData <- reactive({
     Data <- getData()
@@ -525,7 +562,8 @@ server <- function(input,output,session) {
     }
     selectInput('humanDosing','Select Human Dose:',choices=clinDosingNames)
   })
-  
+## calculate safety margin (SM) ------
+   
   calculateSM <- reactive({
     Data <- getData()
     plotData <- getPlotData()
@@ -584,7 +622,7 @@ server <- function(input,output,session) {
       }
       maxFindings <- maxFindings + 1
       
-      ## plot
+# Study vs safety margin plot -------
       
       p <- ggplot(plotData,aes(x=SM,y=Study,label=DoseLabel)) + #label=paste(Dose,'mg/kg/day'))) +
         geom_label(color='white',
@@ -615,6 +653,8 @@ server <- function(input,output,session) {
     req(input$selectData)
     values$selectData <- input$selectData
   })
+  
+  # output$menu function -----
   
   output$menu <- renderMenu({
     if (!is.null(input$selectData)) {
@@ -731,6 +771,8 @@ server <- function(input,output,session) {
   })
 }
 
+
+# ui function ------
 ui <- dashboardPage(
   
   dashboardHeader(title="Nonclinical Summary Tool",titleWidth = 250),
@@ -771,5 +813,6 @@ ui <- dashboardPage(
 )
 
 
+# app running function ----
 
 shinyApp(ui = ui, server = server)
