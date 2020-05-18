@@ -4,6 +4,12 @@ library(stringr)
 library(htmltools)
 library(shinydashboard)
 
+library(tidyverse)
+library(ggstance)
+library(ggrepel)
+library(RColorBrewer)
+library(patchwork)
+library(ggh4x)
 # Bugs ####
 
 # Project Improvement Ideas:
@@ -487,62 +493,49 @@ server <- function(input,output,session) {
     }
   })
   
-  # Create PlotData -----
+  # Create PlotData (changed) -----
   
-  getPlotData <- reactive({
-    Data <- getData()
-    plotData <- data.frame(Study=NA,Dose=NA,Cmax=NA,AUC=NA,NOAEL=NA,doseFindings=NA)
-    count <- 1
-    for (Study in names(Data[['Nonclinical Information']])) {
-      if (Study != 'New Study') {
-        studyData <- Data[['Nonclinical Information']][[Study]]
-        Doses <- NULL
-        Cmaxs <- NULL
-        AUCs <- NULL
-        NOAELs <- NULL
-        for (i in seq(studyData$nDoses)) {
-          Doses[i] <- studyData$Doses[[paste0('Dose',i)]][['Dose']]
-          Cmaxs[i] <- studyData$Doses[[paste0('Dose',i)]][['Cmax']]
-          AUCs[i] <- studyData$Doses[[paste0('Dose',i)]][['AUC']]
-          NOAELs[i] <- studyData$Doses[[paste0('Dose',i)]][['NOAEL']]
-        }
-        Findings <- NULL
-        Reversible <- NULL
-        FindingDoses <- NULL
-        if (studyData$nFindings>0) {
-          for (i in seq(studyData$nFindings)) {
-            Findings[i] <- studyData$Findings[[paste0('Finding',i)]][['Finding']]
-            Reversible[i] <- studyData$Findings[[paste0('Finding',i)]][['Reversibility']]
-            FindingDoses[i] <- paste(studyData$Findings[[paste0('Finding',i)]][['FindingDoses']],collapse='|')
-          }
-        }
-        for (Dose in Doses) {
-          index <- which(Doses==Dose)
-          Cmax <- Cmaxs[index]
-          AUC <- AUCs[index]
-          NOAEL <- NOAELs[index]
-          findingFlag <- F
-          doseFindings <- ''
-          for (Finding in Findings) {
-            findingIndex <- which(Findings==Finding)
-            doseFindingDoses <- unlist(strsplit(FindingDoses[findingIndex],'|',fixed = T))
-            if (Dose %in% doseFindingDoses) {
-              if (doseFindings == '') {
-                doseFindings <- paste0(Finding,' ',Reversible[findingIndex])
-              } else {
-                doseFindings <- paste0(doseFindings,'\n',Finding,' ',Reversible[findingIndex])
-              }
-            }
-          }
-          plotData[count,] <- c(Study,Dose,Cmax,AUC,NOAEL,doseFindings)
-          count <- count + 1
-          findingFlag <- T
+ getPlotData <- reactive({
+  Data <- getData()
+  plotData <- data.frame(matrix(ncol = 11 ))
+  column_names <- c("Study", "Species", "Months", "Dose", "NOAEL", "Cmax", "AUC", "Findings", "Reversibility", "Severity", "Value")
+  colnames(plotData) <- column_names
+  
+  count <- 1
+  
+  for (Study in names(Data[["Nonclinical Information"]])) {
+    if (Study != "New Study") {
+      studyData <- Data[["Nonclinical Information"]][[Study]]
+      
+      for (i in seq(studyData$nFindings)){
+        for (j in seq(studyData$nDoses)){
+          
+          plotData[count, "Study"] <- Study
+          plotData[count, "Species"] <- studyData[["Species"]]
+          plotData[count, "Months"] <- studyData[["Duration"]]
+          plotData[count, "Dose"] <- studyData[["Doses"]][[paste0("Dose", j)]][["Dose"]]
+          plotData[count, "NOAEL"] <- studyData[["Doses"]][[paste0("Dose",j)]][["NOAEL"]]
+          plotData[count, "Cmax"] <- studyData[["Doses"]][[paste0("Dose", j)]][["Cmax"]]
+          plotData[count, "AUC"] <- studyData[["Doses"]][[paste0("Dose", j)]][["AUC"]]
+          plotData[count, "Findings"] <- studyData[["Findings"]][[paste0("Finding", i)]][["Finding"]]
+          plotData[count, "Reversibility"] <- studyData[["Findings"]][[paste0("Finding", i)]][["Reversibility"]]
+          plotData[count, "Severity"] <- studyData[["Findings"]][[paste0("Finding", i)]][["Severity"]][[paste0("Dose", j)]]
+          plotData[count, "Value"] <- 1
+          count <- count+1
+          
         }
       }
     }
-    plotData <- plotData[which(plotData$Study %in% input$displayStudies),]
-    return(plotData)
-  })
+  }
+  
+  plotData$Rev <- gsub("\\[|\\]", "", plotData$Reversibility)
+  plotData$finding_rev <- paste0(plotData$Findings,"_", plotData$Rev)
+  plotData$find_rev_b <- paste0(plotData$Findings, plotData$Reversibility)
+  plotData <- plotData[which(plotData$Study %in% input$displayStudies),]
+  return(plotData)
+  
+})
+  
   
   output$humanDosing <- renderUI({
     req(input$clinDosing)
@@ -560,8 +553,8 @@ server <- function(input,output,session) {
     }
     selectInput('humanDosing','Select Human Dose:',choices=clinDosingNames)
   })
-## calculate safety margin (SM) ------
-   
+# ## calculate safety margin (SM) ------
+#
   calculateSM <- reactive({
     Data <- getData()
     plotData <- getPlotData()
@@ -594,20 +587,35 @@ server <- function(input,output,session) {
     plotData <- cbind(plotData,SM)
     return(plotData)
   })
+
+## output table (changed) ----
   
   output$table <- renderTable({
-    plotData <- calculateSM()
-    plotData
+    plotData_tab <- calculateSM()
+    plotData_tab <- plotData_tab %>% 
+      select(Study, Dose, NOAEL, Cmax, AUC, SM, finding_rev, Severity) %>% 
+      pivot_wider(names_from = finding_rev, values_from = Severity, values_fill = list(Severity = "Absent"))
+    plotData_tab
   })
-  
+
   plotHeight <- function() {
     plotData <- calculateSM()
     nStudies <- length(unique(plotData$Study))
     plotHeight <- 100+200*nStudies
   }
   
+
+## Figure in UI
+
   output$figure <- renderPlot({
     plotData <- calculateSM()
+    
+    ## plotdata for p plot (changed) ----
+    plotData_p <- calculateSM() %>% 
+      select(Study, Species, Months, Dose, SM, Value, NOAEL) %>% 
+      group_by(Study, Dose, SM) %>% 
+      unique()
+    
     if (nrow(plotData)>0) {
       plotData$Study <- factor(plotData$Study,levels=rev(input$displayStudies))
       plotData$DoseLabel <- factor(paste(plotData$Dose,'mg/kg/day'),levels=unique(paste(plotData$Dose,'mg/kg/day'))[order(unique(as.numeric(plotData$Dose),decreasing=F))])
@@ -619,34 +627,84 @@ server <- function(input,output,session) {
         }
       }
       maxFindings <- maxFindings + 1
+
+
       
-# Study vs safety margin plot -------
+      plotData$Findings <- as.factor(plotData$Findings)
+      plotData$Severity <- as.factor(plotData$Severity)
+      # make severity ordered factor
+      plotData$Severity <- factor(plotData$Severity, 
+                                  levels= c('Absent','Present','Minimal', 'Mild',
+                                            'Moderate', 'Marked', 'Severe'), ordered = TRUE)
       
-      p <- ggplot(plotData,aes(x=SM,y=Study,label=DoseLabel)) + #label=paste(Dose,'mg/kg/day'))) +
-        geom_label(color='white',
-                   fill = ifelse(plotData$NOAEL == TRUE, "#239B56", "black"),
-                   label.padding = unit(0.5,'lines'),
-                   fontface='bold',
-                   position = ggstance::position_dodge2v(height = 0.2,preserve='single',padding=0)) +
-        # for position need to modivy position_dodge2v code so that it n (groups) = 1 for all cases
-        # geom_text(aes(label=doseFindings),
-        #           nudge_x = -.08*maxFindings) +
-        # geom_text_repel(aes(label=doseFindings),
-        #                 direction='y',nudge_y = -.2) +
-        scale_y_discrete(position = "right")+
-        #scale_fill_manual(values=c(rgb(0,0,0),'#239B56')) +
-        scale_x_log10(limits=c(min(plotData$SM/2),max(plotData$SM*2)), sec.axis = dup_axis()) +
-        labs(x='Safety Margin',title='Summary of Toxicology Studies') +
-        theme_bw(base_size=18) +
-        theme(plot.title=element_text(hjust=0.5),
-              panel.background = element_rect(fill = "#ecf0f5"),
-              plot.background = element_rect(fill = "#ecf0f5"),
-              axis.title.y = element_blank()) +
-        guides(fill='none')
-      p
+      color_manual <- c('transparent','black','#feb24c','#fd8d3c','#fc4e2a','#e31a1c','#b10026')
+
+# order of study need to be fixed
+  
+      
+# # Study vs safety margin plot  (changed) -------
+      p <- ggplot(plotData_p)+
+        geom_label(aes(x = SM, y = Value, label = paste(Dose, " mg/kg/day")),
+                   color = 'white',
+                   size = 6,
+                   fill = ifelse(plotData_p$NOAEL == TRUE, "#239B56", "black"),
+                   label.padding = unit(0.8, "lines"),
+                   fontface = "bold",
+                   position = ggstance::position_dodge2v(height = 1, preserve = "total",padding=2))+
+
+        scale_x_log10(limits = c(min(plotData_p$SM/2),
+                                 max(plotData_p$SM*2)), sec.axis = dup_axis())+
+        facet_nested( Species+ Months ~ .)+
+
+        labs(x = "Safety Margin", title = "Summary of Toxicology Studies")+
+        theme_bw(base_size=12)+
+        theme(axis.title.y = element_blank(),
+              axis.ticks.y= element_blank(),
+              axis.text.y = element_blank(),
+              panel.grid.major = element_blank(),
+              panel.grid.minor = element_blank(),
+              plot.title = element_text(hjust = 0.5),
+              strip.text.y = element_text(size=11, color="black", face="plain"),
+              strip.background = element_rect( fill = "white"))
+     
+      
+     # findings plot
+      
+      q <- ggplot(plotData)+
+        geom_col(aes(x= Findings, y = Value, fill = Severity, group = Dose), 
+                 position = position_stack(reverse = TRUE), 
+                 color = 'transparent')+  
+        geom_text(aes(x = Findings, y = Value, label = Dose, group = Dose),
+                  size = 5,
+                  color = 'white',
+                  fontface = 'bold',
+                  position = position_stack(vjust = 0.5, reverse = TRUE))+
+        scale_y_discrete(position = 'right')+ 
+        scale_fill_manual(values = color_manual)+
+        
+        facet_grid(Study ~ ., scales = 'free')+
+        
+        theme_bw(base_size=12)+
+        theme(axis.title.y = element_blank(),
+              #strip.text.y = element_blank(),
+              axis.ticks.y = element_blank(),
+              axis.text.y = element_blank(),
+              axis.title.x = element_blank(), 
+              axis.text.x = element_text(angle = 90),
+              plot.title = element_text(hjust = 0.5),
+              panel.grid.major.y = element_blank(),
+              panel.grid.minor.y = element_blank(),
+              panel.grid.major.x = element_line(),
+              panel.grid.minor.x = element_blank(),
+              legend.justification = "top")+
+        labs(title = 'Findings' )+
+        guides(fill = guide_legend(override.aes = aes(label = "")))
+      p + q + plot_layout(ncol=2,widths=c(3,1))
+      
+      
     }
   },height=plotHeight)
-  
+
   observe({
     req(input$selectData)
     values$selectData <- input$selectData
