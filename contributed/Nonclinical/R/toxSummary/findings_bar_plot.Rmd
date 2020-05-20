@@ -140,199 +140,7 @@ color_manual <- c('transparent','black','#feb24c','#fd8d3c','#fc4e2a','#e31a1c',
 ```
 
 
-## Experimental Plots for Findings
-
-### Value (all 1) on y (fixed value) and findings on x  
-
-Dose shown inside bar does not match actual value.  
-
-
-```{r Value (all 1) on y (fixed value) and findings on x bar_latest , echo=TRUE, fig.width=16, fig.height=12}
-
-# p for safety plot 
-p <- ggplot(plotData )+
-    geom_label(aes(x = SM, y = Study, label = paste(Dose, " mg/kg/day")),
-               color = 'white',
-               fill = ifelse(plotData$NOAEL == TRUE, "#239B56", "black"),
-               label.padding = unit(0.5, "lines"),
-               fontface = "bold",
-               position = ggstance::position_dodge2v(height = 3, preserve = "single"))+
-  
-    scale_x_log10(limits = c(min(plotData$SM/2), max(plotData$SM*2)),sec.axis = dup_axis())+
-    facet_nested( Species+ Months ~ .)+
-  
-    labs(x = "Safety Margin", title = "Summary of Toxicology Studies")+
-    theme_bw(base_size=12)+
-    theme(axis.title.y = element_blank(),
-          axis.ticks.y= element_blank(),
-          axis.text.y = element_blank(),
-          panel.grid.major = element_blank(),
-          panel.grid.minor = element_blank(),
-          plot.title = element_text(hjust = 0.5),
-          strip.text.y = element_text(size=11, color="black", face="bold"),
-          strip.background = element_rect( fill = "white"))
-
-# q is for findings plot
-q <- ggplot(findings_data_long)+
-    geom_col(aes(x= Findings, y =Value, fill = Severity), 
-             position = 'stack', color= 'grey')+ 
-    geom_text(aes(x= Findings, y= Value, label = Dose),
-              size = 3, 
-              color = 'white',
-              position = position_stack(vjust = 0.5))+
-    scale_y_continuous(position = 'right')+
-    #scale_fill_brewer(palette="YlOrRd")+
-    scale_fill_manual(values = color_manual)+
-    facet_grid(Study ~ ., scales = 'free')+
-  
-    theme_bw(base_size=12)+
-    theme(axis.title.y = element_blank(),
-           strip.text.y = element_blank(),
-           axis.ticks.y = element_blank(),
-           #axis.text.y = element_blank(),
-           axis.title.x = element_blank(), 
-           axis.text.x = element_text(angle = 90),
-         plot.title = element_text(hjust = 0.5),
-         panel.grid.major.y = element_blank(),
-         panel.grid.minor.y = element_blank(),
-         panel.grid.major.x = element_line(),
-         panel.grid.minor.x = element_blank())+
-    labs(title = 'Dose shown in the box does not match actual value' )+
-    guides(fill = guide_legend(override.aes = aes(label = ""))) #remove 'a' from legend
-    
-p + q + plot_layout(ncol=2,widths=c(3,1))
-
-```
-
-
-### add new variable value_order
-
-```{r create value_order variable and set as factor}
-findings_data_long["value_order"] <- rep(c(3,2,1),dim(findings_data_long)[1]/3) 
-findings_data_long$value_order <- as.factor(findings_data_long$value_order)
-print(head(findings_data_long))
-```
-
-### plot findings on x and value_order on y
-
-Code changed in only findings plot(q)
-
-```{r findings on x and value_order on y,  fig.width=16, fig.height=12}
-# p for safety plot 
-p <- ggplot(plotData )+
-    geom_label(aes(x = SM, y = Study, label = paste(Dose, " mg/kg/day")),
-               color = 'white',
-               fill = ifelse(plotData$NOAEL == TRUE, "#239B56", "black"),
-               label.padding = unit(0.5, "lines"),
-               fontface = "bold",
-               position = ggstance::position_dodge2v(height = 3, preserve = "single"))+
-  
-    scale_x_log10(limits = c(min(plotData$SM/2), max(plotData$SM*2)),sec.axis = dup_axis())+
-    facet_nested( Species+ Months ~ .)+
-  
-    labs(x = "Safety Margin", title = "Summary of Toxicology Studies")+
-    theme_bw(base_size=12)+
-    theme(axis.title.y = element_blank(),
-          axis.ticks.y= element_blank(),
-          axis.text.y = element_blank(),
-          panel.grid.major = element_blank(),
-          panel.grid.minor = element_blank(),
-          plot.title = element_text(hjust = 0.5),
-          strip.text.y = element_text(size=11, color="black", face="bold"),
-          strip.background = element_rect( fill = "white"))
-
-# q is for findings plot
-q <- ggplot(findings_data_long)+
-    geom_col(aes(x= Findings, y = value_order, fill = Severity), # y = value_order
-             position = 'stack', color= 'grey')+ 
-    geom_text(aes(x= Findings, y= value_order, label = Dose),
-              size = 3, 
-              color = 'white',
-              position = position_stack(vjust = 0.5))+
-    scale_y_discrete(position = 'right')+ # changed to discrete
-    #scale_fill_brewer(palette="YlOrRd")+
-    scale_fill_manual(values = color_manual)+
-    facet_grid(Study ~ ., scales = 'free')+
-  
-    theme_bw(base_size=12)+
-    theme(axis.title.y = element_blank(),
-           strip.text.y = element_blank(),
-           axis.ticks.y = element_blank(),
-           #axis.text.y = element_blank(),
-           axis.title.x = element_blank(), 
-           axis.text.x = element_text(angle = 90),
-         plot.title = element_text(hjust = 0.5),
-         panel.grid.major.y = element_blank(),
-         panel.grid.minor.y = element_blank(),
-         panel.grid.major.x = element_line(),
-         panel.grid.minor.x = element_blank())+
-    labs(title = 'bar height is not equal: it is 3:2:1 ratio. \n\ but dose match' )+
-    guides(fill = guide_legend(override.aes = aes(label = ""))) #remove 'a' from legend
-    
-p + q + plot_layout(ncol=2,widths=c(3,1))
-```
-
-### this plot just little cleaner than previous one
-
-```{r absent now transparent_ findings on x and value_order on y ,  fig.width=16, fig.height=12}
-# p for safety plot 
-p <- ggplot(plotData )+
-    geom_label(aes(x = SM, y = Study, label = paste(Dose, " mg/kg/day")),
-               color = 'white',
-               fill = ifelse(plotData$NOAEL == TRUE, "#239B56", "black"),
-               label.padding = unit(0.5, "lines"),
-               fontface = "bold",
-               position = ggstance::position_dodge2v(height = 3, preserve = "single"))+
-  
-    scale_x_log10(limits = c(min(plotData$SM/2), max(plotData$SM*2)),sec.axis = dup_axis())+
-    facet_nested( Species+ Months ~ .)+
-  
-    labs(x = "Safety Margin", title = "Summary of Toxicology Studies")+
-    theme_bw(base_size=12)+
-    theme(axis.title.y = element_blank(),
-          axis.ticks.y= element_blank(),
-          axis.text.y = element_blank(),
-          panel.grid.major = element_blank(),
-          panel.grid.minor = element_blank(),
-          plot.title = element_text(hjust = 0.5),
-          strip.text.y = element_text(size=11, color="black", face="bold"),
-          strip.background = element_rect( fill = "white"))
-
-# q is for findings plot
-q <- ggplot(findings_data_long)+
-    geom_col(aes(x= Findings, y = value_order, fill = Severity), 
-             position = 'stack', color= 'transparent')+  # changed grey to transparent
-    geom_text(aes(x= Findings, y= value_order, label = Dose),
-              size = 3, 
-              color = 'white',
-              position = position_stack(vjust = 0.5))+
-    scale_y_discrete(position = 'right')+ 
-    #scale_fill_brewer(palette="YlOrRd")+
-    scale_fill_manual(values = color_manual)+
-    facet_grid(Study ~ ., scales = 'free')+
-  
-    theme_bw(base_size=12)+
-    theme(axis.title.y = element_blank(),
-           strip.text.y = element_blank(),
-           axis.ticks.y = element_blank(),
-           axis.text.y = element_blank(),
-           axis.title.x = element_blank(), 
-           axis.text.x = element_text(angle = 90),
-         plot.title = element_text(hjust = 0.5),
-         panel.grid.major.y = element_blank(),
-         panel.grid.minor.y = element_blank(),
-         panel.grid.major.x = element_line(),
-         panel.grid.minor.x = element_blank(),
-         legend.justification = "top")+
-    labs(title = 'Same as previous one: \n\ Absent now transparent and gone' )+
-    guides(fill = guide_legend(override.aes = aes(label = ""))) #remove 'a' from legend
-    
-p + q + plot_layout(ncol=2,widths=c(3,1))
-```
-
-
-
-```{r from_Dr. Snyder absent now transparent_ findings on x and value_order on y ,  fig.width=16, fig.height=12}
+```{r plotly with geom_label in safety margin plot ,  fig.width=16, fig.height=12}
 # p for safety plot 
 p <- ggplot(plotData )+
     geom_label(aes(x = SM, y = Value, label = paste(Dose, " mg/kg/day")),
@@ -356,42 +164,10 @@ p <- ggplot(plotData )+
           strip.text.y = element_text(size=11, color="black", face="plain"),
           strip.background = element_rect( fill = "white"))
 ggplotly(p)
-# q is for findings plot
-# q <- ggplot(findings_data_long)+
-#     geom_col(aes(x= Findings, y = Value, fill = Severity, group = Dose), 
-#              position = position_stack(reverse = TRUE), 
-#              color = 'transparent')+  
-#     geom_text(aes(x = Findings, y = Value, label = Dose, group = Dose),
-#               size = 4,
-#               color = 'white',
-#               fontface = 'bold',
-#               position = position_stack(vjust = 0.5, reverse = TRUE))+
-#     scale_y_discrete(position = 'right')+ 
-#     scale_fill_manual(values = color_manual)+
-#     facet_grid(Study ~ ., scales = 'free')+
-#   
-#     theme_bw(base_size=12)+
-#     theme(axis.title.y = element_blank(),
-#            strip.text.y = element_blank(),
-#            axis.ticks.y = element_blank(),
-#            axis.text.y = element_blank(),
-#            axis.title.x = element_blank(), 
-#            axis.text.x = element_text(angle = 90),
-#          plot.title = element_text(hjust = 0.5),
-#          panel.grid.major.y = element_blank(),
-#          panel.grid.minor.y = element_blank(),
-#          panel.grid.major.x = element_line(),
-#          panel.grid.minor.x = element_blank(),
-#          legend.justification = "top")+
-#     labs(title = 'Findings' )+
-#     guides(fill = guide_legend(override.aes = aes(label = ""))) #remove 'a' from legend
-  
-#p + q + plot_layout(ncol=2,widths=c(3,1))
-  p
 
 ```
 
-```{r plotly}
+```{r plotly with geom_text in safety margin plot}
 
 p <- ggplot(plotData )+
     geom_text(aes(x = SM, y = Value, label = paste(Dose, " mg/kg/day")),
@@ -414,103 +190,31 @@ p <- ggplot(plotData )+
           plot.title = element_text(hjust = 0.5),
           strip.text.y = element_text(size=11, color="black", face="plain"),
           strip.background = element_rect( fill = "white"))
-ggplotly(p)
-# q is for findings plot
-# q <- ggplot(findings_data_long)+
-#     geom_col(aes(x= Findings, y = Value, fill = Severity, group = Dose), 
-#              position = position_stack(reverse = TRUE), 
-#              color = 'transparent')+  
-#     geom_text(aes(x = Findings, y = Value, label = Dose, group = Dose),
-#               size = 4,
-#               color = 'white',
-#               fontface = 'bold',
-#               position = position_stack(vjust = 0.5, reverse = TRUE))+
-#     scale_y_discrete(position = 'right')+ 
-#     scale_fill_manual(values = color_manual)+
-#     facet_grid(Study ~ ., scales = 'free')+
-#   
-#     theme_bw(base_size=12)+
-#     theme(axis.title.y = element_blank(),
-#            strip.text.y = element_blank(),
-#            axis.ticks.y = element_blank(),
-#            axis.text.y = element_blank(),
-#            axis.title.x = element_blank(), 
-#            axis.text.x = element_text(angle = 90),
-#          plot.title = element_text(hjust = 0.5),
-#          panel.grid.major.y = element_blank(),
-#          panel.grid.minor.y = element_blank(),
-#          panel.grid.major.x = element_line(),
-#          panel.grid.minor.x = element_blank(),
-#          legend.justification = "top")+
-#     labs(title = 'Findings' )+
-#     guides(fill = guide_legend(override.aes = aes(label = ""))) #remove 'a' from legend
-#     
-# p + q + plot_layout(ncol=2,widths=c(3,1))
-```
-
-
-
-```{r for safety margin plot}
-findings_data_long_p <- findings_data_long %>%
-  select(- c (Findings, Severity, value_order)) %>% 
-  group_by(Study, Dose, SM) %>% 
-  unique()
-```
-
-```{r findings long to  wide}
-finding_wide <- findings_data_long %>% 
-  pivot_wider(names_from = Findings, values_from = Severity)
-finding_wide
+#ggplotly(p)
+ggplotly(p,tooltip = 'x')
 
 ```
 
-
-
-```{r from_Dr. Snyder _from same dataset ,  fig.width=16, fig.height=12}
-# p for safety plot 
-p <- ggplot(findings_data_long_p)+
-    geom_label(aes(x = SM, y = Value, label = paste(Dose, " mg/kg/day")),
-               color = 'white',
-               fill = ifelse(findings_data_long_p$NOAEL == TRUE, "#239B56", "black"),
-               label.padding = unit(0.5, "lines"),
-               fontface = "bold",
-               position = ggstance::position_dodge2v(height = 1, preserve = "total",padding=2))+
-  
-    scale_x_log10(limits = c(min(findings_data_long$SM/2),
-                             max(findings_data_long$SM*2)), sec.axis = dup_axis())+
-    facet_nested( Species+ Months ~ .)+
-  
-    labs(x = "Safety Margin", title = "Summary of Toxicology Studies")+
-    theme_bw(base_size=12)+
-    theme(axis.title.y = element_blank(),
-          axis.ticks.y= element_blank(),
-          axis.text.y = element_blank(),
-          panel.grid.major = element_blank(),
-          panel.grid.minor = element_blank(),
-          plot.title = element_text(hjust = 0.5),
-          strip.text.y = element_text(size=11, color="black", face="plain"),
-          strip.background = element_rect( fill = "white"))
-
-# q is for findings plot
+```{r plotly with findings plot}
 q <- ggplot(findings_data_long)+
-    geom_col(aes(x= Findings, y = Value, fill = Severity, group = Dose), 
-             position = position_stack(reverse = TRUE), 
-             color = 'transparent')+  
+    geom_col(aes(x= Findings, y = Value, fill = Severity, group = Dose),
+             position = position_stack(reverse = TRUE),
+             color = 'transparent')+
     geom_text(aes(x = Findings, y = Value, label = Dose, group = Dose),
               size = 4,
               color = 'white',
               fontface = 'bold',
               position = position_stack(vjust = 0.5, reverse = TRUE))+
-    scale_y_discrete(position = 'right')+ 
+    scale_y_discrete(position = 'right')+
     scale_fill_manual(values = color_manual)+
     facet_grid(Study ~ ., scales = 'free')+
-  
+
     theme_bw(base_size=12)+
     theme(axis.title.y = element_blank(),
-           #strip.text.y = element_blank(),
+           strip.text.y = element_blank(),
            axis.ticks.y = element_blank(),
            axis.text.y = element_blank(),
-           axis.title.x = element_blank(), 
+           axis.title.x = element_blank(),
            axis.text.x = element_text(angle = 90),
          plot.title = element_text(hjust = 0.5),
          panel.grid.major.y = element_blank(),
@@ -519,20 +223,18 @@ q <- ggplot(findings_data_long)+
          panel.grid.minor.x = element_blank(),
          legend.justification = "top")+
     labs(title = 'Findings' )+
-    guides(fill = guide_legend(override.aes = aes(label = ""))) #remove 'a' from legend
-    
-p + q + plot_layout(ncol=2,widths=c(3,1))
+    guides(fill = guide_legend(override.aes = aes(label = "")))
+#q
+ggplotly(q)
 
 ```
 
-
-```{r from_Dr. Snyder absent now transparent_ findings on x and value_order on y (NOAEL) ,  fig.width=16, fig.height=12}
-# p for safety plot 
+```{r plotly with both plot in patchwork format}
 p <- ggplot(plotData )+
-    geom_label(aes(x = SM, y = Value, label = paste(Dose, " mg/kg/day")),
-               color = 'white',
-               fill = ifelse(plotData$NOAEL == TRUE, "#239B56", "black"),
-               label.padding = unit(0.5, "lines"),
+    geom_text(aes(x = SM, y = Value, label = paste(Dose, " mg/kg/day")),
+               color = ifelse(plotData$NOAEL == TRUE, "#239B56", "black"),
+               size = 6,
+               #label.padding = unit(0.5, "lines"),
                fontface = "bold",
                position = ggstance::position_dodge2v(height = 1, preserve = "total",padding=2))+
   
@@ -550,176 +252,56 @@ p <- ggplot(plotData )+
           strip.text.y = element_text(size=11, color="black", face="plain"),
           strip.background = element_rect( fill = "white"))
 
-# q is for findings plot
 q <- ggplot(findings_data_long)+
-    geom_col(aes(x= Findings, y = Value, fill = Severity, group = Dose), 
-             position = position_stack(reverse = T), 
-             color = "transparent")+  
-    geom_text(aes(x = Findings, y = Value, label = Dose,group = Dose),
+    geom_col(aes(x= Findings, y = Value, fill = Severity, group = Dose),
+             position = position_stack(reverse = TRUE),
+             color = 'transparent')+
+    geom_text(aes(x = Findings, y = Value, label = Dose, group = Dose),
               size = 4,
               color = 'white',
               fontface = 'bold',
-              position = position_stack(vjust = 0.5,reverse=T))+
-    scale_y_discrete(position = 'right')+ 
-    #scale_fill_brewer(palette="YlOrRd")+
+              position = position_stack(vjust = 0.5, reverse = TRUE))+
+    scale_y_discrete(position = 'right')+
     scale_fill_manual(values = color_manual)+
     facet_grid(Study ~ ., scales = 'free')+
-  
+
     theme_bw(base_size=12)+
     theme(axis.title.y = element_blank(),
            strip.text.y = element_blank(),
            axis.ticks.y = element_blank(),
            axis.text.y = element_blank(),
-           axis.title.x = element_blank(), 
+           axis.title.x = element_blank(),
            axis.text.x = element_text(angle = 90),
          plot.title = element_text(hjust = 0.5),
          panel.grid.major.y = element_blank(),
          panel.grid.minor.y = element_blank(),
          panel.grid.major.x = element_line(),
-         panel.grid.minor.x = element_blank())+
-    labs(title = 'From Dr. Snyder' )+
-    guides(fill = guide_legend(override.aes = aes(label = ""))) #remove 'a' from legend
-  
+         panel.grid.minor.x = element_blank(),
+         legend.justification = "top")+
+    labs(title = 'Findings' )+
+    guides(fill = guide_legend(override.aes = aes(label = "")))
 p + q + plot_layout(ncol=2,widths=c(3,1))
+#ggplotly(p + q + plot_layout(ncol=2,widths=c(3,1)))
 
 ```
 
-
-### with geom_label_repel function 
-
-```{r with geom_label_repel function, fig.width=16, fig.height=12}
-# p for safety plot 
-p <- ggplot(plotData )+
-    geom_label(aes(x = SM, y = Study, label = paste(Dose, " mg/kg/day")),
-               color = 'white',
-               fill = ifelse(plotData$NOAEL == TRUE, "#239B56", "black"),
-               label.padding = unit(0.5, "lines"),
-               fontface = "bold",
-               position = ggstance::position_dodge2v(height = 3, preserve = "single"))+
-  
-    scale_x_log10(limits = c(min(plotData$SM/2), max(plotData$SM*2)),sec.axis = dup_axis())+
-    facet_nested( Species+ Months ~ .)+
-  
-    labs(x = "Safety Margin", title = "Summary of Toxicology Studies")+
-    theme_bw(base_size=12)+
-    theme(axis.title.y = element_blank(),
-          axis.ticks.y= element_blank(),
-          axis.text.y = element_blank(),
-          panel.grid.major = element_blank(),
-          panel.grid.minor = element_blank(),
-          plot.title = element_text(hjust = 0.5),
-          strip.text.y = element_text(size=11, color="black", face="bold"),
-          strip.background = element_rect( fill = "white"))
-
-# q is for findings plot
-q <- ggplot(findings_data_long)+
-    geom_label_repel(aes(y= Dose , x = Findings, label = Dose, fill = Severity),
-                     color = ifelse(findings_data_long$Severity == "Absent", "transparent", "white"), 
-                     fontface = 'bold',
-                     label.padding = unit(.5, 'lines'),
-                     direction = 'y',
-                     segment.color = NA)+
-    scale_y_continuous(position = 'right')+ 
-    #scale_fill_brewer(palette="YlOrRd")+
-    scale_fill_manual(values = color_manual)+
-    facet_grid(Study ~ ., scales = 'free')+
-  
-    theme_bw(base_size=12)+
-    theme(axis.title.y = element_blank(),
-           strip.text.y = element_blank(),
-           axis.ticks.y = element_blank(),
-           #axis.text.y = element_blank(),
-           axis.title.x = element_blank(), 
-           axis.text.x = element_text(angle = 90),
-         plot.title = element_text(hjust = 0.5),
-         panel.grid.major.y = element_blank(),
-         panel.grid.minor.y = element_blank(),
-         panel.grid.major.x = element_line(),
-         panel.grid.minor.x = element_blank())+
-    labs(title = 'with geom_label_repel function' )+
-    guides(fill = guide_legend(override.aes = aes(label = ""))) #remove 'a' from legend
-    
-p + q + plot_layout(ncol=2,widths=c(3,1))
-
-```
-
-### with geom_point and geom_text function
-
-box (shape) size can be changed in geom_point
-
-```{r with geom_point and geom_text}
-
-# p for safety plot 
-# p <- ggplot(plotData )+
-#     geom_label(aes(x = SM, y = Study, label = paste(Dose, " mg/kg/day")),
-#                color = 'white',
-#                fill = ifelse(plotData$NOAEL == TRUE, "#239B56", "black"),
-#                label.padding = unit(0.5, "lines"),
-#                fontface = "bold",
-#                position = ggstance::position_dodge2v(height = 3, preserve = "single"))+
-#   
-#     scale_x_log10(limits = c(min(plotData$SM/2), max(plotData$SM*2)),sec.axis = dup_axis())+
-#     facet_nested( Species+ Months ~ .)+
-#   
-#     labs(x = "Safety Margin", title = "Summary of Toxicology Studies")+
-#     theme_bw(base_size=12)+
-#     theme(axis.title.y = element_blank(),
-#           axis.ticks.y= element_blank(),
-#           axis.text.y = element_blank(),
-#           panel.grid.major = element_blank(),
-#           panel.grid.minor = element_blank(),
-#           plot.title = element_text(hjust = 0.5),
-#           strip.text.y = element_text(size=11, color="black", face="bold"),
-#           strip.background = element_rect( fill = "white"))
-
-
-# q is for findings plot
-q <- ggplot(findings_data_long)+
-    geom_point(aes(y = Dose, x= Findings, fill = Severity), 
-               size = 12,
-               shape = 22,
-               color = "transparent")+
-    geom_text(aes(y= Dose, x = Findings, label = Dose),
-              color = "white",
-              position = position_dodge2v(height = 0.5, preserve = 'single'))+
-    scale_y_continuous(position = 'right')+ 
-    #scale_fill_brewer(palette="YlOrRd")+
-    scale_fill_manual(values = color_manual)+
-    facet_grid(Study ~ ., scales = 'free')+
-  
-    theme_bw(base_size=12)+
-    theme(axis.title.y = element_blank(),
-           strip.text.y = element_blank(),
-           axis.ticks.y = element_blank(),
-           #axis.text.y = element_blank(),
-           axis.title.x = element_blank(), 
-           axis.text.x = element_text(angle = 90),
-         plot.title = element_text(hjust = 0.5),
-         panel.grid.major.y = element_blank(),
-         panel.grid.minor.y = element_blank(),
-         panel.grid.major.x = element_line(),
-         panel.grid.minor.x = element_blank())+
-    labs(title = 'with geom_point and geom_text function' )+
-    guides(fill = guide_legend(override.aes = aes(label = ""))) #remove 'a' from legend
-    
-# p + q + plot_layout(ncol=2,widths=c(3,1))
-ggplotly(q)
-
+```{r}
+library(gridExtra)
 ```
 
 
 ```{r}
 p <- ggplot(plotData )+
-    geom_label(aes(x = SM, y = Study, label = paste(Dose, " mg/kg/day")),
-               color = 'white',
-               fill = ifelse(plotData$NOAEL == TRUE, "#239B56", "black"),
-               label.padding = unit(0.5, "lines"),
+    geom_text(aes(x = SM, y = Value, label = paste(Dose, " mg/kg/day")),
+               color = ifelse(plotData$NOAEL == TRUE, "#239B56", "black"),
+               size = 6,
+               #label.padding = unit(0.5, "lines"),
                fontface = "bold",
-               position = ggstance::position_dodge2v(height = 3, preserve = "single"))+
-
+               position = ggstance::position_dodge2v(height = 1, preserve = "total",padding=2))+
+  
     scale_x_log10(limits = c(min(plotData$SM/2), max(plotData$SM*2)),sec.axis = dup_axis())+
     facet_nested( Species+ Months ~ .)+
-
+  
     labs(x = "Safety Margin", title = "Summary of Toxicology Studies")+
     theme_bw(base_size=12)+
     theme(axis.title.y = element_blank(),
@@ -728,8 +310,101 @@ p <- ggplot(plotData )+
           panel.grid.major = element_blank(),
           panel.grid.minor = element_blank(),
           plot.title = element_text(hjust = 0.5),
-          strip.text.y = element_text(size=11, color="black", face="bold"),
+          strip.text.y = element_text(size=11, color="black", face="plain"),
           strip.background = element_rect( fill = "white"))
+
+q <- ggplot(findings_data_long)+
+    geom_col(aes(x= Findings, y = Value, fill = Severity, group = Dose),
+             position = position_stack(reverse = TRUE),
+             color = 'transparent')+
+    geom_text(aes(x = Findings, y = Value, label = Dose, group = Dose),
+              size = 4,
+              color = 'white',
+              fontface = 'bold',
+              position = position_stack(vjust = 0.5, reverse = TRUE))+
+    scale_y_discrete(position = 'right')+
+    scale_fill_manual(values = color_manual)+
+    facet_grid(Study ~ ., scales = 'free')+
+
+    theme_bw(base_size=12)+
+    theme(axis.title.y = element_blank(),
+           strip.text.y = element_blank(),
+           axis.ticks.y = element_blank(),
+           axis.text.y = element_blank(),
+           axis.title.x = element_blank(),
+           axis.text.x = element_text(angle = 90),
+         plot.title = element_text(hjust = 0.5),
+         panel.grid.major.y = element_blank(),
+         panel.grid.minor.y = element_blank(),
+         panel.grid.major.x = element_line(),
+         panel.grid.minor.x = element_blank(),
+         legend.justification = "top")+
+    labs(title = 'Findings' )+
+    guides(fill = guide_legend(override.aes = aes(label = "")))
+#grid.arrange(p,q, ncol = 2)
+#ggplotly(grid.arrange(p,q, ncol =2))
 ggplotly(p)
+#ggplotly(q)
 ```
+
+
+```{r subplot from plotly}
+p <- ggplot(plotData )+
+    geom_text(aes(x = SM, y = Value, label = paste(Dose, " mg/kg/day")),
+               color = ifelse(plotData$NOAEL == TRUE, "#239B56", "black"),
+               size = 6,
+               #label.padding = unit(0.5, "lines"),
+               fontface = "bold",
+               position = ggstance::position_dodge2v(height = 1, preserve = "total",padding=2))+
+  
+    scale_x_log10(limits = c(min(plotData$SM/2), max(plotData$SM*2)),sec.axis = dup_axis())+
+    facet_nested( Species+ Months ~ .)+
+  
+    labs(x = "Safety Margin", title = "Summary of Toxicology Studies")+
+    theme_bw(base_size=12)+
+    theme(axis.title.y = element_blank(),
+          axis.ticks.y= element_blank(),
+          axis.text.y = element_blank(),
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          plot.title = element_text(hjust = 0.5),
+          strip.text.y = element_text(size=11, color="black", face="plain"),
+          strip.background = element_rect( fill = "white"))
+
+
+q <- ggplot(findings_data_long)+
+    geom_col(aes(x= Findings, y = Value, fill = Severity, group = Dose),
+             position = position_stack(reverse = TRUE),
+             color = 'transparent')+
+    geom_text(aes(x = Findings, y = Value, label = Dose, group = Dose),
+              size = 4,
+              color = 'white',
+              fontface = 'bold',
+              position = position_stack(vjust = 0.5, reverse = TRUE))+
+    scale_y_discrete(position = 'right')+
+    scale_fill_manual(values = color_manual)+
+    facet_grid(Study ~ ., scales = 'free')+
+
+    theme_bw(base_size=12)+
+    theme(axis.title.y = element_blank(),
+           strip.text.y = element_blank(),
+           axis.ticks.y = element_blank(),
+           axis.text.y = element_blank(),
+           axis.title.x = element_blank(),
+           axis.text.x = element_text(angle = 90),
+         plot.title = element_text(hjust = 0.5),
+         panel.grid.major.y = element_blank(),
+         panel.grid.minor.y = element_blank(),
+         panel.grid.major.x = element_line(),
+         panel.grid.minor.x = element_blank(),
+         legend.justification = "top")+
+    labs(title = 'Findings' )+
+    guides(fill = guide_legend(override.aes = aes(label = "")))
+
+p <- ggplotly(p, tooltip = "x")
+q <- ggplotly(q, tooltip = "x")
+subplot(p, q, nrows = 1)
+```
+
+
 
