@@ -35,10 +35,11 @@ Dose_findings <- c("liver Necrosis [PR]", "liver Necrosis [PR]", "Mortality [NR]
 Severity_level <- c('Absent', 'Present', 'Minimal', 'Mild','Moderate','Marked', 'Severe')
 
 Severity <- factor(c('Absent', 'Minimal', 'Mild','Moderate','Marked', 'Severe', 'Present',  'Minimal', 'Mild','Moderate','Marked', 'Severe'), levels = Severity_level)
-Value <- c(rep(c(1,2,3), 4))
+Value <- c(rep(1, 12))
+Value_order <- c(rep(c(1,2,3), 4))
 
 
-plotData <- data.frame(Study, Dose, NOAEL, Dose_findings,Severity, SM, Value)
+plotData <- data.frame(Study, Dose, NOAEL, Dose_findings,Severity, SM, Value, Value_order)
 print(plotData)
 ```
 
@@ -55,103 +56,118 @@ plotData$Species <- as.factor(plotData$Species)
 ```
 
 
-### Create findings_data dataframe
+### geom_point square overlap if big, and does not cover text if small
 
-```{r create findings_data}
-
-# 4 study group
-Study <- rep(x = c("Rat-1-month", "Dog-1-month",
-                   "Dog-3-month", "Monkey-1-month"), times = 1, each = 3)
-Dose <- c(1,33,100,1,3,10, 6, 30,78,5,50,90)
-NOAEL <- c(TRUE, FALSE, FALSE, FALSE, TRUE, FALSE,
-           FALSE,TRUE,FALSE,FALSE,TRUE,FALSE)
-SM <- c(9.68, 319.35, 967.74, 33.33, 100.00, 333.333,
-        200, 1000, 2600, 96,967.74,1741)
-
-# add all the findings
-Convulsion <- c("Absent","Absent","Absent","Absent","Absent","Mild",
-                "Absent","Absent","Absent","Absent","Absent","Absent")
-
-Liver_Necrosis_PR <- c("Absent", "Mild", "Severe", "Absent", "Absent", "Absent",
-                       "Moderate","Absent","Absent","Absent","Absent","Absent")
-
-Mortality_NR <- c("Absent","Absent","Marked","Absent","Absent",
-                  "Mild","Absent","Absent","Mild","Absent","Absent","Absent")
-
-Carcinogenecity <- c("Absent","Absent","Absent","Absent","Absent","Mild",
-                     "Absent","Absent","Absent","Absent","Severe","Absent")
-
-Emesis_Rev <- c("Absent","Absent","Absent","Mild","Marked","Severe",
-                "Absent","Present","Absent","Absent","Absent","Absent")
-
-Necrosis_Rev <- c("Absent","Absent","Absent","Absent","Absent","Mild",
-                  "Absent","Absent","Absent","Minimal","Absent","Absent")
-
-Value <- c(rep(1, 12)) # all the value 1
-
-# Severity_level <- c('Absent', 'Present', 'Minimal', 'Mild','Moderate','Marked', 'Severe')
-
-# dataframe
-
-findings_data <- data.frame(Study, Dose, NOAEL, SM, Convulsion, Liver_Necrosis_PR, Mortality_NR, Carcinogenecity, Emesis_Rev, Necrosis_Rev, Value)
-
-print(findings_data)
-```
-
-### convert wide to long data format
-
-```{r wide data to long format data}
-findings_data_long <- findings_data %>% gather(Findings,Severity, 5:10 )
-print(head(findings_data_long))
-print(dim(findings_data_long))
-```
-
-### Set Findings and Severity varialbe as factor
-
-```{r Findings and Severity varialbe as factor}
-findings_data_long$Findings <- as.factor(findings_data_long$Findings)
-findings_data_long$Severity <- as.factor(findings_data_long$Severity)
-# make severity ordered factor
-findings_data_long$Severity <- factor(findings_data_long$Severity,  levels= c('Absent', 'Present','Minimal', 'Mild', 'Moderate', 'Marked', 'Severe'), ordered = TRUE)
-```
-
-### Create Species and Months variable from Study
-
-```{r Make Species and Months variable from Study}
-findings_data_long <- separate(findings_data_long, Study, into = c("Species","Months"), sep = "-", remove = FALSE,extra = 'merge' )
-```
-
-### Set Species and Months variable as factor
-
-```{r Set Species and Months as factor}
-findings_data_long$Species <- as.factor(findings_data_long$Species)
-findings_data_long$Months <- as.factor(findings_data_long$Months)
-```
-
-
-### Color palettes
-
-```{r make custom color palettes}
-#color_man <- c('#ffffb2','#fed976','#feb24c','#fd8d3c','#fc4e2a','#e31a1c','#b10026')
-
-color_manual <- c('transparent','black','#feb24c','#fd8d3c','#fc4e2a','#e31a1c','#b10026')
-
-#color_man <- c('#b10026', '#e31a1c','#fc4e2a',  '#fd8d3c', '#feb24c', 'black', 'blue')
-```
-
-### ggplotly function does not work with geom_label
-
-```{r plotly with geom_label in safety margin plot  ,  fig.width=16, fig.height=12}
-
+```{r geom_text with geom_point  ,  fig.width=16, fig.height=12}
+# ggplot(df, aes(xmin = x - w / 2, xmax = x + w / 2, ymin = y, ymax = y + 1)) +
+#   geom_rect(aes(fill = z), colour = "grey50")
 
 p <- ggplot(plotData )+ 
-  geom_rect(mapping = aes(xmin = SM-20, xmax = SM+20,ymin= SM -.5, ymax= SM+.5 ))+
-    geom_text(aes(x= SM, y= Value, x = SM, y = Value, label = paste(Dose, " mg/kg/day")),
+  # geom_rect(aes(xmin = log10(SM)-50, xmax  = log10(SM)+50, ymin = Value-0.5, ymax = Value+0.5), fill = 'grey')+
+  
+  geom_point(aes(x = SM, y= Value),
+             shape = 22,
+             size =30, 
+             fill = "grey")+
+
+    geom_text(aes(x= SM, y= Value, label = paste(Dose, " mg/kg/day")),
                color = ifelse(plotData$NOAEL == TRUE, "#239B56", "black"),
-               #fill = ifelse(plotData$NOAEL == TRUE, "#239B56", "black"),
-               #label.padding = unit(0.5, "lines"),
                fontface = "bold")+
                #position = ggstance::position_dodge2v(height = 1, preserve = "total",padding=2))+
+  
+    scale_x_log10(limits = c(min(plotData$SM/2), max(plotData$SM*2)),sec.axis = dup_axis())+
+  ylim(c(0.5, 4))+
+    facet_nested( Species+ Months ~ .)+
+  
+    labs(x = "Safety Margin", title = "Summary of Toxicology Studies")+
+    theme_bw(base_size=12)+
+    theme(axis.title.y = element_blank(),
+          # axis.ticks.y= element_blank(),
+          # axis.text.y = element_blank(),
+          # panel.grid.major = element_blank(),
+          # panel.grid.minor = element_blank(),
+          # plot.title = element_text(hjust = 0.5),
+          # strip.text.y = element_text(size=11, color="black", face="plain"),
+          strip.background = element_rect( fill = "white"))
+#ggplotly(p)
+p
+
+```
+ 
+ ### geom_tile does not match when window changes
+  
+```{r geom_tile}
+p <- ggplot(plotData , aes (x = SM, y = Value_order))+
+  geom_tile(fill = ifelse(plotData$NOAEL == TRUE, "#239B56", "black"),
+            color = "transparent",
+            width = 0.4,
+            height = 0.6)+
+  geom_text(aes(label = paste(Dose, " mg/kg/day")),
+            color = "white",
+            fontface = "bold")+
+  
+  
+    scale_x_log10(limits = c(min(plotData$SM/2), max(plotData$SM*2)),sec.axis = dup_axis())+
+  ylim(c(0.5, 4))+
+    facet_nested( Species+ Months ~ .)+
+  
+    labs(x = "Safety Margin", title = "Summary of Toxicology Studies")+
+    theme_bw(base_size=12)+
+    theme(axis.title.y = element_blank(),
+          # axis.ticks.y= element_blank(),
+          # axis.text.y = element_blank(),
+          # panel.grid.major = element_blank(),
+          # panel.grid.minor = element_blank(),
+          # plot.title = element_text(hjust = 0.5),
+          # strip.text.y = element_text(size=11, color="black", face="plain"),
+          strip.background = element_rect( fill = "white"))
+#ggplotly(p)
+p
+```
+  
+  
+
+# geom_react __ rectangular does not change with text when windows changes
+
+```{r geom_rect with geom_text}
+p <- ggplot(plotData )+ 
+  
+  geom_rect(aes(xmin = SM-100, xmax  =SM+100, ymin = Value -0.25, ymax = Value +0.25 ), fill = 'grey')+
+  
+
+    geom_text(aes(x= SM, y= Value, label = paste(Dose, " mg/kg/day")),
+               color = ifelse(plotData$NOAEL == TRUE, "#239B56", "black"),
+               fontface = "bold")+
+               #position = ggstance::position_dodge2v(height = 1, preserve = "total",padding=2))+
+  
+  #   scale_x_log10(limits = c(min(plotData$SM/2), max(plotData$SM*2)),sec.axis = dup_axis())+
+  # ylim(c(0.5, 4))+
+  
+    facet_nested( Species+ Months ~ .)+
+  
+    labs(x = "Safety Margin", title = "Summary of Toxicology Studies")+
+    theme_bw(base_size=12)+
+    theme(axis.title.y = element_blank(),
+          # axis.ticks.y= element_blank(),
+          # axis.text.y = element_blank(),
+          # panel.grid.major = element_blank(),
+          # panel.grid.minor = element_blank(),
+          # plot.title = element_text(hjust = 0.5),
+          # strip.text.y = element_text(size=11, color="black", face="plain"),
+          strip.background = element_rect( fill = "white"))
+#ggplotly(p)
+p
+```
+
+
+```{r geom_label with SM value inside}
+p <- ggplot(plotData )+
+    geom_label(aes(x = SM, y = Value, label = paste(Dose, " mg/kg/day", "\n" , "SM: ", SM)),
+               color = 'white',
+               fill = ifelse(plotData$NOAEL == TRUE, "#239B56", "black"),
+               label.padding = unit(0.5, "lines"),
+               fontface = "bold",
+               position = ggstance::position_dodge2v(height = 1, preserve = "total",padding=2))+
   
     scale_x_log10(limits = c(min(plotData$SM/2), max(plotData$SM*2)),sec.axis = dup_axis())+
     facet_nested( Species+ Months ~ .)+
@@ -166,10 +182,10 @@ p <- ggplot(plotData )+
           plot.title = element_text(hjust = 0.5),
           strip.text.y = element_text(size=11, color="black", face="plain"),
           strip.background = element_rect( fill = "white"))
-#ggplotly(p)
 p
-
 ```
+
+
 
 ```{r geom_tile}
 p <- ggplot(plotData )+ 
