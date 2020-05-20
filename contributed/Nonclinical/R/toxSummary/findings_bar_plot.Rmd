@@ -175,7 +175,9 @@ ggplotly(p)
 
 p <- ggplot(plotData )+
     geom_text(aes(x = SM, y = Value, label = paste(Dose, " mg/kg/day")),
-               color = 'red',
+               color = ifelse(plotData$NOAEL == TRUE, "#239B56", "black"),
+              size = 6,
+            
                #fill = ifelse(plotData$NOAEL == TRUE, "#239B56", "black"),
                #label.padding = unit(0.5, "lines"),
                fontface = "bold",
