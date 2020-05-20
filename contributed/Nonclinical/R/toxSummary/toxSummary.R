@@ -10,6 +10,7 @@ library(ggrepel)
 library(RColorBrewer)
 library(patchwork)
 library(ggh4x)
+library(plotly)
 # Bugs ####
 
 # Project Improvement Ideas:
@@ -607,7 +608,7 @@ server <- function(input,output,session) {
 
 ## Figure in UI
 
-  output$figure <- renderPlot({
+  output$figure <- renderPlotly({
     plotData <- calculateSM()
     
     ## plotdata for p plot (changed) ----
@@ -644,11 +645,11 @@ server <- function(input,output,session) {
       
 # # Study vs safety margin plot  (changed) -------
       p <- ggplot(plotData_p)+
-        geom_label(aes(x = SM, y = Value, label = paste(Dose, " mg/kg/day")),
-                   color = 'white',
+        geom_text(aes(x = SM, y = Value, label = paste(Dose, " mg/kg/day")),
+                   color = ifelse(plotData_p$NOAEL == TRUE, "#239B56", "black"),
                    size = 6,
-                   fill = ifelse(plotData_p$NOAEL == TRUE, "#239B56", "black"),
-                   label.padding = unit(0.8, "lines"),
+                   #fill = ifelse(plotData_p$NOAEL == TRUE, "#239B56", "black"),
+                   #label.padding = unit(0.8, "lines"),
                    fontface = "bold",
                    position = ggstance::position_dodge2v(height = 1, preserve = "total",padding=2))+
 
@@ -699,11 +700,13 @@ server <- function(input,output,session) {
               legend.justification = "top")+
         labs(title = 'Findings' )+
         guides(fill = guide_legend(override.aes = aes(label = "")))
-      p + q + plot_layout(ncol=2,widths=c(3,1))
+      # p + q + plot_layout(ncol=2,widths=c(3,1))
+      subplot(p, q, nrows = 1)
+      
       
       
     }
-  },height=plotHeight)
+  })
 
   observe({
     req(input$selectData)
@@ -858,7 +861,7 @@ ui <- dashboardPage(
         tabPanel('Figure',
                  actionButton('refreshPlot','Refresh Plot'),
                  br(),
-                 plotOutput('figure')
+                 plotlyOutput('figure')
         ),
         tabPanel('Table',
                  tableOutput('table')
