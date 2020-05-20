@@ -19,6 +19,7 @@ library(ggrepel)
 library(RColorBrewer)
 library(patchwork)
 library(ggh4x)
+library(plotly)
 #library(forcats)
 ```
 
@@ -354,6 +355,141 @@ p <- ggplot(plotData )+
           plot.title = element_text(hjust = 0.5),
           strip.text.y = element_text(size=11, color="black", face="plain"),
           strip.background = element_rect( fill = "white"))
+ggplotly(p)
+# q is for findings plot
+# q <- ggplot(findings_data_long)+
+#     geom_col(aes(x= Findings, y = Value, fill = Severity, group = Dose), 
+#              position = position_stack(reverse = TRUE), 
+#              color = 'transparent')+  
+#     geom_text(aes(x = Findings, y = Value, label = Dose, group = Dose),
+#               size = 4,
+#               color = 'white',
+#               fontface = 'bold',
+#               position = position_stack(vjust = 0.5, reverse = TRUE))+
+#     scale_y_discrete(position = 'right')+ 
+#     scale_fill_manual(values = color_manual)+
+#     facet_grid(Study ~ ., scales = 'free')+
+#   
+#     theme_bw(base_size=12)+
+#     theme(axis.title.y = element_blank(),
+#            strip.text.y = element_blank(),
+#            axis.ticks.y = element_blank(),
+#            axis.text.y = element_blank(),
+#            axis.title.x = element_blank(), 
+#            axis.text.x = element_text(angle = 90),
+#          plot.title = element_text(hjust = 0.5),
+#          panel.grid.major.y = element_blank(),
+#          panel.grid.minor.y = element_blank(),
+#          panel.grid.major.x = element_line(),
+#          panel.grid.minor.x = element_blank(),
+#          legend.justification = "top")+
+#     labs(title = 'Findings' )+
+#     guides(fill = guide_legend(override.aes = aes(label = ""))) #remove 'a' from legend
+  
+#p + q + plot_layout(ncol=2,widths=c(3,1))
+  p
+
+```
+
+```{r plotly}
+
+p <- ggplot(plotData )+
+    geom_text(aes(x = SM, y = Value, label = paste(Dose, " mg/kg/day")),
+               color = 'red',
+               #fill = ifelse(plotData$NOAEL == TRUE, "#239B56", "black"),
+               #label.padding = unit(0.5, "lines"),
+               fontface = "bold",
+               position = ggstance::position_dodge2v(height = 1, preserve = "total",padding=2))+
+  
+    scale_x_log10(limits = c(min(plotData$SM/2), max(plotData$SM*2)),sec.axis = dup_axis())+
+    facet_nested( Species+ Months ~ .)+
+  
+    labs(x = "Safety Margin", title = "Summary of Toxicology Studies")+
+    theme_bw(base_size=12)+
+    theme(axis.title.y = element_blank(),
+          axis.ticks.y= element_blank(),
+          axis.text.y = element_blank(),
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          plot.title = element_text(hjust = 0.5),
+          strip.text.y = element_text(size=11, color="black", face="plain"),
+          strip.background = element_rect( fill = "white"))
+ggplotly(p)
+# q is for findings plot
+# q <- ggplot(findings_data_long)+
+#     geom_col(aes(x= Findings, y = Value, fill = Severity, group = Dose), 
+#              position = position_stack(reverse = TRUE), 
+#              color = 'transparent')+  
+#     geom_text(aes(x = Findings, y = Value, label = Dose, group = Dose),
+#               size = 4,
+#               color = 'white',
+#               fontface = 'bold',
+#               position = position_stack(vjust = 0.5, reverse = TRUE))+
+#     scale_y_discrete(position = 'right')+ 
+#     scale_fill_manual(values = color_manual)+
+#     facet_grid(Study ~ ., scales = 'free')+
+#   
+#     theme_bw(base_size=12)+
+#     theme(axis.title.y = element_blank(),
+#            strip.text.y = element_blank(),
+#            axis.ticks.y = element_blank(),
+#            axis.text.y = element_blank(),
+#            axis.title.x = element_blank(), 
+#            axis.text.x = element_text(angle = 90),
+#          plot.title = element_text(hjust = 0.5),
+#          panel.grid.major.y = element_blank(),
+#          panel.grid.minor.y = element_blank(),
+#          panel.grid.major.x = element_line(),
+#          panel.grid.minor.x = element_blank(),
+#          legend.justification = "top")+
+#     labs(title = 'Findings' )+
+#     guides(fill = guide_legend(override.aes = aes(label = ""))) #remove 'a' from legend
+#     
+# p + q + plot_layout(ncol=2,widths=c(3,1))
+```
+
+
+
+```{r for safety margin plot}
+findings_data_long_p <- findings_data_long %>%
+  select(- c (Findings, Severity, value_order)) %>% 
+  group_by(Study, Dose, SM) %>% 
+  unique()
+```
+
+```{r findings long to  wide}
+finding_wide <- findings_data_long %>% 
+  pivot_wider(names_from = Findings, values_from = Severity)
+finding_wide
+
+```
+
+
+
+```{r from_Dr. Snyder _from same dataset ,  fig.width=16, fig.height=12}
+# p for safety plot 
+p <- ggplot(findings_data_long_p)+
+    geom_label(aes(x = SM, y = Value, label = paste(Dose, " mg/kg/day")),
+               color = 'white',
+               fill = ifelse(findings_data_long_p$NOAEL == TRUE, "#239B56", "black"),
+               label.padding = unit(0.5, "lines"),
+               fontface = "bold",
+               position = ggstance::position_dodge2v(height = 1, preserve = "total",padding=2))+
+  
+    scale_x_log10(limits = c(min(findings_data_long$SM/2),
+                             max(findings_data_long$SM*2)), sec.axis = dup_axis())+
+    facet_nested( Species+ Months ~ .)+
+  
+    labs(x = "Safety Margin", title = "Summary of Toxicology Studies")+
+    theme_bw(base_size=12)+
+    theme(axis.title.y = element_blank(),
+          axis.ticks.y= element_blank(),
+          axis.text.y = element_blank(),
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          plot.title = element_text(hjust = 0.5),
+          strip.text.y = element_text(size=11, color="black", face="plain"),
+          strip.background = element_rect( fill = "white"))
 
 # q is for findings plot
 q <- ggplot(findings_data_long)+
@@ -371,7 +507,7 @@ q <- ggplot(findings_data_long)+
   
     theme_bw(base_size=12)+
     theme(axis.title.y = element_blank(),
-           strip.text.y = element_blank(),
+           #strip.text.y = element_blank(),
            axis.ticks.y = element_blank(),
            axis.text.y = element_blank(),
            axis.title.x = element_blank(), 
@@ -388,8 +524,6 @@ q <- ggplot(findings_data_long)+
 p + q + plot_layout(ncol=2,widths=c(3,1))
 
 ```
-
-
 
 
 ```{r from_Dr. Snyder absent now transparent_ findings on x and value_order on y (NOAEL) ,  fig.width=16, fig.height=12}
@@ -445,7 +579,7 @@ q <- ggplot(findings_data_long)+
          panel.grid.minor.x = element_blank())+
     labs(title = 'From Dr. Snyder' )+
     guides(fill = guide_legend(override.aes = aes(label = ""))) #remove 'a' from legend
-    
+  
 p + q + plot_layout(ncol=2,widths=c(3,1))
 
 ```
@@ -516,27 +650,27 @@ box (shape) size can be changed in geom_point
 ```{r with geom_point and geom_text}
 
 # p for safety plot 
-p <- ggplot(plotData )+
-    geom_label(aes(x = SM, y = Study, label = paste(Dose, " mg/kg/day")),
-               color = 'white',
-               fill = ifelse(plotData$NOAEL == TRUE, "#239B56", "black"),
-               label.padding = unit(0.5, "lines"),
-               fontface = "bold",
-               position = ggstance::position_dodge2v(height = 3, preserve = "single"))+
-  
-    scale_x_log10(limits = c(min(plotData$SM/2), max(plotData$SM*2)),sec.axis = dup_axis())+
-    facet_nested( Species+ Months ~ .)+
-  
-    labs(x = "Safety Margin", title = "Summary of Toxicology Studies")+
-    theme_bw(base_size=12)+
-    theme(axis.title.y = element_blank(),
-          axis.ticks.y= element_blank(),
-          axis.text.y = element_blank(),
-          panel.grid.major = element_blank(),
-          panel.grid.minor = element_blank(),
-          plot.title = element_text(hjust = 0.5),
-          strip.text.y = element_text(size=11, color="black", face="bold"),
-          strip.background = element_rect( fill = "white"))
+# p <- ggplot(plotData )+
+#     geom_label(aes(x = SM, y = Study, label = paste(Dose, " mg/kg/day")),
+#                color = 'white',
+#                fill = ifelse(plotData$NOAEL == TRUE, "#239B56", "black"),
+#                label.padding = unit(0.5, "lines"),
+#                fontface = "bold",
+#                position = ggstance::position_dodge2v(height = 3, preserve = "single"))+
+#   
+#     scale_x_log10(limits = c(min(plotData$SM/2), max(plotData$SM*2)),sec.axis = dup_axis())+
+#     facet_nested( Species+ Months ~ .)+
+#   
+#     labs(x = "Safety Margin", title = "Summary of Toxicology Studies")+
+#     theme_bw(base_size=12)+
+#     theme(axis.title.y = element_blank(),
+#           axis.ticks.y= element_blank(),
+#           axis.text.y = element_blank(),
+#           panel.grid.major = element_blank(),
+#           panel.grid.minor = element_blank(),
+#           plot.title = element_text(hjust = 0.5),
+#           strip.text.y = element_text(size=11, color="black", face="bold"),
+#           strip.background = element_rect( fill = "white"))
 
 
 # q is for findings plot
@@ -568,7 +702,34 @@ q <- ggplot(findings_data_long)+
     labs(title = 'with geom_point and geom_text function' )+
     guides(fill = guide_legend(override.aes = aes(label = ""))) #remove 'a' from legend
     
-p + q + plot_layout(ncol=2,widths=c(3,1))
+# p + q + plot_layout(ncol=2,widths=c(3,1))
+ggplotly(q)
 
+```
+
+
+```{r}
+p <- ggplot(plotData )+
+    geom_label(aes(x = SM, y = Study, label = paste(Dose, " mg/kg/day")),
+               color = 'white',
+               fill = ifelse(plotData$NOAEL == TRUE, "#239B56", "black"),
+               label.padding = unit(0.5, "lines"),
+               fontface = "bold",
+               position = ggstance::position_dodge2v(height = 3, preserve = "single"))+
+
+    scale_x_log10(limits = c(min(plotData$SM/2), max(plotData$SM*2)),sec.axis = dup_axis())+
+    facet_nested( Species+ Months ~ .)+
+
+    labs(x = "Safety Margin", title = "Summary of Toxicology Studies")+
+    theme_bw(base_size=12)+
+    theme(axis.title.y = element_blank(),
+          axis.ticks.y= element_blank(),
+          axis.text.y = element_blank(),
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          plot.title = element_text(hjust = 0.5),
+          strip.text.y = element_text(size=11, color="black", face="bold"),
+          strip.background = element_rect( fill = "white"))
+ggplotly(p)
 ```
 
