@@ -597,6 +597,15 @@ server <- function(input,output,session) {
       pivot_wider(names_from = finding_rev, values_from = Severity, values_fill = list(Severity = "Absent"))
     plotData_tab
   })
+  
+  output$table_01 <- renderTable({
+    plotData_01 <- calculateSM()
+    plotData_01 <- plotData_01 %>% 
+      select(Findings, Rev, Species, Months, Dose, SM) %>% 
+      group_by(Species, Dose)
+    plotData_01
+      
+  })
 
   plotHeight <- function() {
     plotData <- calculateSM()
@@ -855,18 +864,31 @@ ui <- dashboardPage(
     conditionalPanel(
       condition='input.selectData!="blankData.rds"',
       tabsetPanel(
+        
         tabPanel('Figure',
                  actionButton('refreshPlot','Refresh Plot'),
                  br(),
                  plotOutput('figure')
         ),
+        
         tabPanel('Table',
                  tableOutput('table')
-        )
+                 
+        ),
+        
+        tabPanel("Table_01",
+                 tableOutput('table_01')
+      ),
+      tabPanel("Table_02",
+               tableOutput('table_02')
+      ),
+      tabPanel("Table_03",
+               tableOutput('table_03')
       )
-    )
-  )
-)
+      
+     
+  ))))
+
 
 
 # app running function ----
