@@ -35,7 +35,7 @@ Dose_findings <- c("liver Necrosis [PR]", "liver Necrosis [PR]", "Mortality [NR]
 Severity_level <- c('Absent', 'Present', 'Minimal', 'Mild','Moderate','Marked', 'Severe')
 
 Severity <- factor(c('Absent', 'Minimal', 'Mild','Moderate','Marked', 'Severe', 'Present',  'Minimal', 'Mild','Moderate','Marked', 'Severe'), levels = Severity_level)
-Value <- c(rep(1, 12))
+Value <- c(rep(c(1,2,3), 4))
 
 
 plotData <- data.frame(Study, Dose, NOAEL, Dose_findings,Severity, SM, Value)
@@ -144,13 +144,14 @@ color_manual <- c('transparent','black','#feb24c','#fd8d3c','#fc4e2a','#e31a1c',
 ```{r plotly with geom_label in safety margin plot  ,  fig.width=16, fig.height=12}
 
 
-p <- ggplot(plotData )+
-    geom_label(aes(x = SM, y = Value, label = paste(Dose, " mg/kg/day")),
-               color = 'white',
-               fill = ifelse(plotData$NOAEL == TRUE, "#239B56", "black"),
-               label.padding = unit(0.5, "lines"),
-               fontface = "bold",
-               position = ggstance::position_dodge2v(height = 1, preserve = "total",padding=2))+
+p <- ggplot(plotData )+ 
+  geom_rect(mapping = aes(xmin = SM-20, xmax = SM+20,ymin= SM -.5, ymax= SM+.5 ))+
+    geom_text(aes(x= SM, y= Value, x = SM, y = Value, label = paste(Dose, " mg/kg/day")),
+               color = ifelse(plotData$NOAEL == TRUE, "#239B56", "black"),
+               #fill = ifelse(plotData$NOAEL == TRUE, "#239B56", "black"),
+               #label.padding = unit(0.5, "lines"),
+               fontface = "bold")+
+               #position = ggstance::position_dodge2v(height = 1, preserve = "total",padding=2))+
   
     scale_x_log10(limits = c(min(plotData$SM/2), max(plotData$SM*2)),sec.axis = dup_axis())+
     facet_nested( Species+ Months ~ .)+
@@ -165,9 +166,38 @@ p <- ggplot(plotData )+
           plot.title = element_text(hjust = 0.5),
           strip.text.y = element_text(size=11, color="black", face="plain"),
           strip.background = element_rect( fill = "white"))
-ggplotly(p)
+#ggplotly(p)
+p
 
 ```
+
+```{r geom_tile}
+p <- ggplot(plotData )+ 
+  geom_tile(mapping = aes(x = SM, y= Value ))+
+    geom_text(aes(x = SM, y = Value, label = paste(Dose, " mg/kg/day")),
+               color = ifelse(plotData$NOAEL == TRUE, "#239B56", "black"),
+               #fill = ifelse(plotData$NOAEL == TRUE, "#239B56", "black"),
+               #label.padding = unit(0.5, "lines"),
+               fontface = "bold")+
+               #position = ggstance::position_dodge2v(height = 1, preserve = "total",padding=2))+
+  
+    scale_x_log10(limits = c(min(plotData$SM/2), max(plotData$SM*2)),sec.axis = dup_axis())+
+    facet_nested( Species+ Months ~ .)+
+  
+    labs(x = "Safety Margin", title = "Summary of Toxicology Studies")+
+    theme_bw(base_size=12)+
+    theme(axis.title.y = element_blank(),
+          axis.ticks.y= element_blank(),
+          axis.text.y = element_blank(),
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          plot.title = element_text(hjust = 0.5),
+          strip.text.y = element_text(size=11, color="black", face="plain"),
+          strip.background = element_rect( fill = "white"))
+#ggplotly(p)
+p
+```
+
 
 ### ggplotly does work with geom_text
 
@@ -422,5 +452,47 @@ q <- ggplotly(q, tooltip = "x")
 subplot(p, q, nrows = 1)
 ```
 
+```{r}
+df <- data.frame(
+  x = rep(c(2, 5, 7, 9, 12), 2),
+  y = rep(c(1, 2), each = 5),
+  z = factor(rep(1:5, each = 2)),
+  w = rep(diff(c(0, 4, 6, 8, 10, 14)), 2)
+)
+ggplot(df, aes(x, y)) +
+  geom_tile(aes(fill = z), colour = "grey50")
+```
 
+```{r}
+ggplot(df, aes(xmin = x - w / 2, xmax = x + w / 2, ymin = y, ymax = y + 1)) +
+  geom_rect(aes(fill = z), colour = "grey50")
+```
+
+
+```{r}
+p <- ggplot(plotData )+ 
+  # geom_rect(mapping = aes(xmin = SM-20, xmax = SM+20,ymin= SM -.5, ymax= SM+.5 ))+
+    geom_text(aes(x= SM, y = Value, label = paste(Dose, " mg/kg/day")),
+               color = ifelse(plotData$NOAEL == TRUE, "#239B56", "black"),
+               #fill = ifelse(plotData$NOAEL == TRUE, "#239B56", "black"),
+               #label.padding = unit(0.5, "lines"),
+               fontface = "bold")+
+               #position = ggstance::position_dodge2v(height = 1, preserve = "total",padding=2))+
+  
+    scale_x_log10(limits = c(min(plotData$SM/2), max(plotData$SM*2)),sec.axis = dup_axis())+
+    facet_nested( Species+ Months ~ .)+
+  
+    labs(x = "Safety Margin", title = "Summary of Toxicology Studies")+
+    theme_bw(base_size=12)+
+    theme(axis.title.y = element_blank(),
+          # axis.ticks.y= element_blank(),
+          # axis.text.y = element_blank(),
+          # panel.grid.major = element_blank(),
+          # panel.grid.minor = element_blank(),
+          # plot.title = element_text(hjust = 0.5),
+          # strip.text.y = element_text(size=11, color="black", face="plain"),
+          strip.background = element_rect( fill = "white"))
+#ggplotly(p)
+p
+```
 
