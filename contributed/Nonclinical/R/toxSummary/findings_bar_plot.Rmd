@@ -95,14 +95,48 @@ p
 ```
  
  ### geom_tile does not match when window changes
+ ### also for this fill to ifelse plotly does not work
   
-```{r geom_tile}
+```{r geom_tile fill conditional color}
 p <- ggplot(plotData , aes (x = SM, y = Value_order))+
   geom_tile(fill = ifelse(plotData$NOAEL == TRUE, "#239B56", "black"),
             color = "transparent",
             width = 0.4,
             height = 0.6)+
+  
   geom_text(aes(label = paste(Dose, " mg/kg/day")),
+            color = "white",
+            fontface = "bold")+
+  
+  
+    scale_x_log10(limits = c(min(plotData$SM/2), max(plotData$SM*2)),sec.axis = dup_axis())+
+  ylim(c(0.5, 4))+
+    facet_nested( Species+ Months ~ .)+
+  
+    labs(x = "Safety Margin", title = "Summary of Toxicology Studies")+
+    theme_bw(base_size=12)+
+    theme(axis.title.y = element_blank(),
+          # axis.ticks.y= element_blank(),
+          # axis.text.y = element_blank(),
+          # panel.grid.major = element_blank(),
+          # panel.grid.minor = element_blank(),
+          # plot.title = element_text(hjust = 0.5),
+          # strip.text.y = element_text(size=11, color="black", face="plain"),
+          strip.background = element_rect( fill = "white"))
+p
+#ggplotly(p)
+```
+  
+plotly does not work in this case
+ 
+```{r}
+p <- ggplot(plotData )+
+  geom_tile(aes (x = SM, y = Value_order),
+            color = "transparent",
+            width = 0.4,
+            height = 0.6)+
+  
+  geom_text(aes(x = SM, y = Value_order, label = paste(Dose, " mg/kg/day")),
             color = "white",
             fontface = "bold")+
   
@@ -132,16 +166,16 @@ p
 ```{r geom_rect with geom_text}
 p <- ggplot(plotData )+ 
   
-  geom_rect(aes(xmin = SM-100, xmax  =SM+100, ymin = Value -0.25, ymax = Value +0.25 ), fill = 'grey')+
+  geom_rect(aes(xmin = SM-210, xmax  =SM+210, ymin = Value_order -0.30, ymax = Value_order +0.30 ), fill = ifelse(plotData$NOAEL == TRUE, "#239B56", "black"))+
   
 
-    geom_text(aes(x= SM, y= Value, label = paste(Dose, " mg/kg/day")),
-               color = ifelse(plotData$NOAEL == TRUE, "#239B56", "black"),
+    geom_text(aes(x= SM, y= Value_order, label = paste(Dose, " mg/kg/day")),
+               color = "white",
                fontface = "bold")+
                #position = ggstance::position_dodge2v(height = 1, preserve = "total",padding=2))+
   
-  #   scale_x_log10(limits = c(min(plotData$SM/2), max(plotData$SM*2)),sec.axis = dup_axis())+
-  # ylim(c(0.5, 4))+
+  #scale_x_log10(limits = c(min(plotData$SM/2), max(plotData$SM*2))+
+  ylim(c(0.5, 4))+
   
     facet_nested( Species+ Months ~ .)+
   
@@ -160,9 +194,9 @@ p
 ```
 
 
-```{r geom_label with SM value inside}
+```{r geom_label}
 p <- ggplot(plotData )+
-    geom_label(aes(x = SM, y = Value, label = paste(Dose, " mg/kg/day", "\n" , "SM: ", SM)),
+    geom_label(aes(x = SM, y = Value, label = paste(Dose, " mg/kg/day")),
                color = 'white',
                fill = ifelse(plotData$NOAEL == TRUE, "#239B56", "black"),
                label.padding = unit(0.5, "lines"),
@@ -175,27 +209,25 @@ p <- ggplot(plotData )+
     labs(x = "Safety Margin", title = "Summary of Toxicology Studies")+
     theme_bw(base_size=12)+
     theme(axis.title.y = element_blank(),
-          axis.ticks.y= element_blank(),
-          axis.text.y = element_blank(),
-          panel.grid.major = element_blank(),
-          panel.grid.minor = element_blank(),
-          plot.title = element_text(hjust = 0.5),
-          strip.text.y = element_text(size=11, color="black", face="plain"),
+          # axis.ticks.y= element_blank(),
+          # axis.text.y = element_blank(),
+          # panel.grid.major = element_blank(),
+          # panel.grid.minor = element_blank(),
+          # plot.title = element_text(hjust = 0.5),
+          # strip.text.y = element_text(size=11, color="black", face="plain"),
           strip.background = element_rect( fill = "white"))
 p
 ```
 
 
-
-```{r geom_tile}
-p <- ggplot(plotData )+ 
-  geom_tile(mapping = aes(x = SM, y= Value ))+
-    geom_text(aes(x = SM, y = Value, label = paste(Dose, " mg/kg/day")),
-               color = ifelse(plotData$NOAEL == TRUE, "#239B56", "black"),
-               #fill = ifelse(plotData$NOAEL == TRUE, "#239B56", "black"),
-               #label.padding = unit(0.5, "lines"),
-               fontface = "bold")+
-               #position = ggstance::position_dodge2v(height = 1, preserve = "total",padding=2))+
+```{r geom_label with sm }
+p <- ggplot(plotData )+
+    geom_label(aes(x = SM, y = Value, label = paste("D:", Dose, "/", "SM:", round(SM , 1))),
+               color = 'white',
+               fill = ifelse(plotData$NOAEL == TRUE, "#239B56", "black"),
+               label.padding = unit(0.5, "lines"),
+               fontface = "bold",
+               position = ggstance::position_dodge2v(height = 1, preserve = "total",padding=2))+
   
     scale_x_log10(limits = c(min(plotData$SM/2), max(plotData$SM*2)),sec.axis = dup_axis())+
     facet_nested( Species+ Months ~ .)+
@@ -203,14 +235,13 @@ p <- ggplot(plotData )+
     labs(x = "Safety Margin", title = "Summary of Toxicology Studies")+
     theme_bw(base_size=12)+
     theme(axis.title.y = element_blank(),
-          axis.ticks.y= element_blank(),
-          axis.text.y = element_blank(),
-          panel.grid.major = element_blank(),
-          panel.grid.minor = element_blank(),
-          plot.title = element_text(hjust = 0.5),
-          strip.text.y = element_text(size=11, color="black", face="plain"),
+          # axis.ticks.y= element_blank(),
+          # axis.text.y = element_blank(),
+          # panel.grid.major = element_blank(),
+          # panel.grid.minor = element_blank(),
+          # plot.title = element_text(hjust = 0.5),
+          # strip.text.y = element_text(size=11, color="black", face="plain"),
           strip.background = element_rect( fill = "white"))
-#ggplotly(p)
 p
 ```
 
@@ -235,12 +266,12 @@ p <- ggplot(plotData )+
     labs(x = "Safety Margin", title = "Summary of Toxicology Studies")+
     theme_bw(base_size=12)+
     theme(axis.title.y = element_blank(),
-          axis.ticks.y= element_blank(),
-          axis.text.y = element_blank(),
-          panel.grid.major = element_blank(),
-          panel.grid.minor = element_blank(),
-          plot.title = element_text(hjust = 0.5),
-          strip.text.y = element_text(size=11, color="black", face="plain"),
+          # axis.ticks.y= element_blank(),
+          # axis.text.y = element_blank(),
+          # panel.grid.major = element_blank(),
+          # panel.grid.minor = element_blank(),
+          # plot.title = element_text(hjust = 0.5),
+          # strip.text.y = element_text(size=11, color="black", face="plain"),
           strip.background = element_rect( fill = "white"))
 #ggplotly(p)
 ggplotly(p,tooltip = 'x')
