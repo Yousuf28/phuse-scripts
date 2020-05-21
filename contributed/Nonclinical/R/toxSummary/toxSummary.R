@@ -10,6 +10,7 @@ library(ggrepel)
 library(RColorBrewer)
 library(patchwork)
 library(ggh4x)
+library(DT)
 # Bugs ####
 
 # Project Improvement Ideas:
@@ -590,7 +591,7 @@ server <- function(input,output,session) {
 
 ## output table (changed) ----
   
-  output$table <- renderTable({
+  output$table <- renderDT({
     plotData_tab <- calculateSM()
     plotData_tab <- plotData_tab %>% 
       select(Study, Dose, NOAEL, Cmax, AUC, SM, finding_rev, Severity) %>% 
@@ -598,7 +599,7 @@ server <- function(input,output,session) {
     plotData_tab
   })
   
-  output$table_01 <- renderTable({
+  output$table_01 <- renderDT({
     plotData_01 <- calculateSM()
     plotData_01 <- plotData_01 %>% 
       select(Findings, Rev, Species, Months, Dose, SM) %>% 
@@ -872,18 +873,18 @@ ui <- dashboardPage(
         ),
         
         tabPanel('Table',
-                 tableOutput('table')
+                 DT::dataTableOutput('table')
                  
         ),
         
         tabPanel("Table_01",
-                 tableOutput('table_01')
+                 DT::dataTableOutput('table_01')
       ),
       tabPanel("Table_02",
-               tableOutput('table_02')
+               DT::dataTableOutput('table_02')
       ),
       tabPanel("Table_03",
-               tableOutput('table_03')
+               DT::dataTableOutput('table_03')
       )
       
      
