@@ -1,0 +1,135 @@
+---
+title: "table_export"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+### Import Library
+
+```{r library, echo=TRUE, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(ggstance)
+library(ggrepel)
+library(RColorBrewer)
+library(patchwork)
+library(ggh4x)
+library(plotly)
+#library(forcats)
+```
+
+### Create plotData dataframe for Safety Margin plot
+
+```{r plotData dataframe}
+Study <- rep(x = c("Rat-1-month", "Dog-1-month", "Dog-3-month", "Monkey-1-month"), times = 1, each = 3)
+Dose <- c(1,33,100,1,3,10, 6, 30,78,5,50,90)
+NOAEL <- c(TRUE, FALSE, FALSE, FALSE, TRUE, FALSE, FALSE,TRUE,FALSE,FALSE,TRUE,FALSE)
+SM <- c(9.68, 319.35, 967.74, 33.33, 100.00, 333.333,200, 1000, 2600, 96,967.74,1741)
+Dose_findings <- c("liver Necrosis [PR]", "liver Necrosis [PR]", "Mortality [NR]", "Emesis [Rev]",  "Emesis [Rev]", "Convulsion [NR]","Emesis [Rev]", "Carcinogenecity[NR]", "Emesis [Rev]",  "Necrosis[Rev]", "Necrosis[Rev]", "Carcinogenecity[NR]")
+
+Severity_level <- c('Absent', 'Present', 'Minimal', 'Mild','Moderate','Marked', 'Severe')
+
+Severity <- factor(c('Absent', 'Minimal', 'Mild','Moderate','Marked', 'Severe', 'Present',  'Minimal', 'Mild','Moderate','Marked', 'Severe'), levels = Severity_level)
+Value <- c(rep(1, 12))
+
+
+plotData <- data.frame(Study, Dose, NOAEL, Dose_findings,Severity, SM, Value)
+print(plotData)
+```
+
+### Save species and duration (months) in separate variable
+
+```{r make species a variable from study variable}
+plotData <- separate(plotData, Study, into = c("Species","Months"), sep = "-", remove = FALSE,extra = 'merge' )
+```
+
+### Convert species as factor
+
+```{r}
+plotData$Species <- as.factor(plotData$Species)
+```
+
+
+### Create findings_data dataframe
+
+```{r create findings_data}
+
+# 4 study group
+Study <- rep(x = c("Rat-1-month", "Dog-1-month",
+                   "Dog-3-month", "Monkey-1-month"), times = 1, each = 3)
+Dose <- c(1,33,100,1,3,10, 6, 30,78,5,50,90)
+NOAEL <- c(TRUE, FALSE, FALSE, FALSE, TRUE, FALSE,
+           FALSE,TRUE,FALSE,FALSE,TRUE,FALSE)
+SM <- c(9.68, 319.35, 967.74, 33.33, 100.00, 333.333,
+        200, 1000, 2600, 96,967.74,1741)
+
+# add all the findings
+Convulsion <- c("Absent","Absent","Absent","Absent","Absent","Mild",
+                "Absent","Absent","Absent","Absent","Absent","Absent")
+
+Liver_Necrosis_PR <- c("Absent", "Mild", "Severe", "Absent", "Absent", "Absent",
+                       "Moderate","Absent","Absent","Absent","Absent","Absent")
+
+Mortality_NR <- c("Absent","Absent","Marked","Absent","Absent",
+                  "Mild","Absent","Absent","Mild","Absent","Absent","Absent")
+
+Carcinogenecity <- c("Absent","Absent","Absent","Absent","Absent","Mild",
+                     "Absent","Absent","Absent","Absent","Severe","Absent")
+
+Emesis_Rev <- c("Absent","Absent","Absent","Mild","Marked","Severe",
+                "Absent","Present","Absent","Absent","Absent","Absent")
+
+Necrosis_Rev <- c("Absent","Absent","Absent","Absent","Absent","Mild",
+                  "Absent","Absent","Absent","Minimal","Absent","Absent")
+
+Value <- c(rep(1, 12)) # all the value 1
+
+# Severity_level <- c('Absent', 'Present', 'Minimal', 'Mild','Moderate','Marked', 'Severe')
+
+# dataframe
+
+findings_data <- data.frame(Study, Dose, NOAEL, SM, Convulsion, Liver_Necrosis_PR, Mortality_NR, Carcinogenecity, Emesis_Rev, Necrosis_Rev, Value)
+
+print(findings_data)
+```
+
+### convert wide to long data format
+
+```{r wide data to long format data}
+findings_data_long <- findings_data %>% gather(Findings,Severity, 5:10 )
+print(head(findings_data_long))
+print(dim(findings_data_long))
+```
+
+### Set Findings and Severity varialbe as factor
+
+```{r Findings and Severity varialbe as factor}
+findings_data_long$Findings <- as.factor(findings_data_long$Findings)
+findings_data_long$Severity <- as.factor(findings_data_long$Severity)
+# make severity ordered factor
+findings_data_long$Severity <- factor(findings_data_long$Severity,  levels= c('Absent', 'Present','Minimal', 'Mild', 'Moderate', 'Marked', 'Severe'), ordered = TRUE)
+```
+
+### Create Species and Months variable from Study
+
+```{r Make Species and Months variable from Study}
+findings_data_long <- separate(findings_data_long, Study, into = c("Species","Months"), sep = "-", remove = FALSE,extra = 'merge' )
+```
+
+### Set Species and Months variable as factor
+
+```{r Set Species and Months as factor}
+findings_data_long$Species <- as.factor(findings_data_long$Species)
+findings_data_long$Months <- as.factor(findings_data_long$Months)
+```
+
+
+```{r}
+
+```
+
