@@ -602,10 +602,15 @@ server <- function(input,output,session) {
   output$table_01 <- renderDT({
     plotData_01 <- calculateSM()
     plotData_01 <- plotData_01 %>% 
-      select(Findings, Rev, Species, Months, Dose, SM) %>% 
-      group_by(Species, Dose)
+      select( Study,Findings, Rev, Dose, SM) %>% 
+      group_by(Study, Dose)
+    plotData_01 <- datatable(plotData_01,rownames = FALSE, options = list(rowsGroup = list(0,1,2)))
+    path <- "yousuf" # folder containing dataTables.rowsGroup.js
+    dep <- htmltools::htmlDependency(
+      "RowsGroup", "2.0.0", 
+      path, script = "dataTables.rowsGroup.js")
+    plotData_01$dependencies <- c(plotData_01$dependencies, list(dep))
     plotData_01
-      
   })
 
   plotHeight <- function() {
