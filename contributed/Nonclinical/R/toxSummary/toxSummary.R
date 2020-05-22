@@ -602,9 +602,9 @@ server <- function(input,output,session) {
   output$table_01 <- renderDT({
     plotData_01 <- calculateSM()
     plotData_01 <- plotData_01 %>% 
-      select( Study,Findings, Rev, Dose, SM) %>% 
+      select( Study,Findings, Rev, Severity, Dose, SM) %>% 
       group_by(Study, Dose)
-    plotData_01 <- datatable(plotData_01,rownames = FALSE, options = list(rowsGroup = list(0,1,2)))
+    plotData_01 <- datatable(plotData_01,rownames = FALSE, options = list(rowsGroup = list(0,1,2,3)))
     path <- "yousuf" # folder containing dataTables.rowsGroup.js
     dep <- htmltools::htmlDependency(
       "RowsGroup", "2.0.0", 

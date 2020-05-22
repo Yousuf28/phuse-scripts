@@ -13,7 +13,7 @@ server <- function(input, output){
                         options = list(
                           rowsGroup = list(0) # merge cells of column 1
                         ))
-    path <- "yousuf/dataTables.rowsGroup.js" # folder containing dataTables.rowsGroup.js
+    path <- "yousuf" # folder containing dataTables.rowsGroup.js
     dep <- htmltools::htmlDependency(
       "RowsGroup", "2.0.0", 
       path, script = "dataTables.rowsGroup.js")

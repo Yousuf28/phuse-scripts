@@ -20,6 +20,7 @@ library(RColorBrewer)
 library(patchwork)
 library(ggh4x)
 library(plotly)
+library(scales)
 #library(forcats)
 ```
 
@@ -332,8 +333,10 @@ p + q + plot_layout(ncol=2,widths=c(3,1))
 
 
 
-```{r from_Dr. Snyder absent now transparent_ findings on x and value_order on y ,  fig.width=16, fig.height=12}
+```{r more ticks in x axis ,  fig.width=16, fig.height=12}
 # p for safety plot 
+
+
 p <- ggplot(plotData )+
     geom_label(aes(x = SM, y = Value, label = paste(Dose, " mg/kg/day")),
                color = 'white',
@@ -342,7 +345,12 @@ p <- ggplot(plotData )+
                fontface = "bold",
                position = ggstance::position_dodge2v(height = 1, preserve = "total",padding=2))+
   
-    scale_x_log10(limits = c(min(plotData$SM/2), max(plotData$SM*2)),sec.axis = dup_axis())+
+    # scale_x_log10(limits = c(min(plotData$SM/2), max(plotData$SM*2)),sec.axis = dup_axis(),
+    #               breaks = trans_breaks('log10', function(x) 10^x), labels = label_number())+
+  
+  scale_x_log10(limits = c(min(plotData$SM/2), max(plotData$SM*2)),sec.axis = dup_axis(),
+                  breaks = breaks_log(n= 10, base = 10), labels = label_number(accuracy = 1))+
+  
     facet_nested( Species+ Months ~ .)+
   
     labs(x = "Safety Margin", title = "Summary of Toxicology Studies")+
@@ -350,44 +358,46 @@ p <- ggplot(plotData )+
     theme(axis.title.y = element_blank(),
           axis.ticks.y= element_blank(),
           axis.text.y = element_blank(),
-          panel.grid.major = element_blank(),
+          #panel.grid.major = element_blank(),
+          panel.grid.major.y = element_blank(),
+          panel.grid.minor.y = element_blank(),
           panel.grid.minor = element_blank(),
           plot.title = element_text(hjust = 0.5),
           strip.text.y = element_text(size=11, color="black", face="plain"),
           strip.background = element_rect( fill = "white"))
-ggplotly(p)
+
 # q is for findings plot
-# q <- ggplot(findings_data_long)+
-#     geom_col(aes(x= Findings, y = Value, fill = Severity, group = Dose), 
-#              position = position_stack(reverse = TRUE), 
-#              color = 'transparent')+  
-#     geom_text(aes(x = Findings, y = Value, label = Dose, group = Dose),
-#               size = 4,
-#               color = 'white',
-#               fontface = 'bold',
-#               position = position_stack(vjust = 0.5, reverse = TRUE))+
-#     scale_y_discrete(position = 'right')+ 
-#     scale_fill_manual(values = color_manual)+
-#     facet_grid(Study ~ ., scales = 'free')+
-#   
-#     theme_bw(base_size=12)+
-#     theme(axis.title.y = element_blank(),
-#            strip.text.y = element_blank(),
-#            axis.ticks.y = element_blank(),
-#            axis.text.y = element_blank(),
-#            axis.title.x = element_blank(), 
-#            axis.text.x = element_text(angle = 90),
-#          plot.title = element_text(hjust = 0.5),
-#          panel.grid.major.y = element_blank(),
-#          panel.grid.minor.y = element_blank(),
-#          panel.grid.major.x = element_line(),
-#          panel.grid.minor.x = element_blank(),
-#          legend.justification = "top")+
-#     labs(title = 'Findings' )+
-#     guides(fill = guide_legend(override.aes = aes(label = ""))) #remove 'a' from legend
+
+q <- ggplot(findings_data_long)+
+    geom_col(aes(x= Findings, y = Value, fill = Severity, group = Dose),
+             position = position_stack(reverse = TRUE),
+             color = 'transparent')+
+    geom_text(aes(x = Findings, y = Value, label = Dose, group = Dose),
+              size = 4,
+              color = 'white',
+              fontface = 'bold',
+              position = position_stack(vjust = 0.5, reverse = TRUE))+
+    scale_y_discrete(position = 'right')+
+    scale_fill_manual(values = color_manual)+
+    facet_grid(Study ~ ., scales = 'free')+
+
+    theme_bw(base_size=12)+
+    theme(axis.title.y = element_blank(),
+           strip.text.y = element_blank(),
+           axis.ticks.y = element_blank(),
+           axis.text.y = element_blank(),
+           axis.title.x = element_blank(),
+           axis.text.x = element_text(angle = 90),
+         plot.title = element_text(hjust = 0.5),
+         panel.grid.major.y = element_blank(),
+         panel.grid.minor.y = element_blank(),
+         panel.grid.major.x = element_line(),
+         panel.grid.minor.x = element_blank(),
+         legend.justification = "top")+
+    labs(title = 'Findings' )+
+    guides(fill = guide_legend(override.aes = aes(label = "")))
+p + q + plot_layout(ncol=2,widths=c(3,1))
   
-#p + q + plot_layout(ncol=2,widths=c(3,1))
-  p
 
 ```
 
