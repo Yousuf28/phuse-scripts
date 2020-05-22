@@ -55,6 +55,31 @@ plotData <- separate(plotData, Study, into = c("Species","Months"), sep = "-", r
 plotData$Species <- as.factor(plotData$Species)
 ```
 
+```{r geom label}
+p <- ggplot(plotData )+
+    geom_label(aes(x = SM, y = Value, label = paste(Dose, " mg/kg/day")),
+               color = 'white',
+               fill = ifelse(plotData$NOAEL == TRUE, "#239B56", "black"),
+               label.padding = unit(0.5, "lines"),
+               fontface = "bold",
+               position = ggstance::position_dodge2v(height = 1, preserve = "total",padding=2))+
+  
+    scale_x_log10(limits = c(min(plotData$SM/2), max(plotData$SM*2)),sec.axis = dup_axis())+
+    facet_nested( Species+ Months ~ .)+
+  
+    labs(x = "Safety Margin", title = "Summary of Toxicology Studies")+
+    theme_bw(base_size=12)+
+    theme(axis.title.y = element_blank(),
+          axis.ticks.y= element_blank(),
+          axis.text.y = element_blank(),
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          plot.title = element_text(hjust = 0.5),
+          strip.text.y = element_text(size=11, color="black", face="plain"),
+          strip.background = element_rect( fill = "white"))
+ggplotly(p)
+```
+
 
 ### geom_point square overlap if big, and does not cover text if small
 
@@ -99,10 +124,10 @@ p
   
 ```{r geom_tile fill conditional color}
 p <- ggplot(plotData , aes (x = SM, y = Value_order))+
-  geom_tile(fill = ifelse(plotData$NOAEL == TRUE, "#239B56", "black"),
+  geom_tile(aes( fill = NOAEL),
             color = "transparent",
-            width = 0.4,
-            height = 0.6)+
+            width = 0.3,
+            height = 0.8)+
   
   geom_text(aes(label = paste(Dose, " mg/kg/day")),
             color = "white",
@@ -123,8 +148,10 @@ p <- ggplot(plotData , aes (x = SM, y = Value_order))+
           # plot.title = element_text(hjust = 0.5),
           # strip.text.y = element_text(size=11, color="black", face="plain"),
           strip.background = element_rect( fill = "white"))
-p
-#ggplotly(p)
+
+#p
+#
+ggplotly(p, tooltip = "x")
 ```
   
 plotly does not work in this case
@@ -155,8 +182,9 @@ p <- ggplot(plotData )+
           # plot.title = element_text(hjust = 0.5),
           # strip.text.y = element_text(size=11, color="black", face="plain"),
           strip.background = element_rect( fill = "white"))
-#ggplotly(p)
-p
+
+ggplotly(p)
+
 ```
   
   
@@ -216,7 +244,7 @@ p <- ggplot(plotData )+
           # plot.title = element_text(hjust = 0.5),
           # strip.text.y = element_text(size=11, color="black", face="plain"),
           strip.background = element_rect( fill = "white"))
-p
+ggplotly(p, tooltip = "x")
 ```
 
 
@@ -541,5 +569,19 @@ p <- ggplot(plotData )+
           strip.background = element_rect( fill = "white"))
 #ggplotly(p)
 p
+```
+
+```{r}
+x = rep(c("1", "2", "3"), 3)
+y = rep(c("K", "B","A"), each=3)
+z = sample(c(NA,"A","L"), 9,replace = TRUE)
+df <- data.frame(x,y,z)
+```
+
+```{r}
+ggplot(df)+
+geom_tile(aes(x=x,y=y,fill=z),width=0.9,height=0.9)+
+scale_fill_manual(values = c(L='grey', A='red'), na.value='grey')
+p2 <- ggplotly(p)
 ```
 
