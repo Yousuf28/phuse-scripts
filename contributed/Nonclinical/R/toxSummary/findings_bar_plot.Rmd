@@ -77,7 +77,7 @@ p <- ggplot(plotData )+
           plot.title = element_text(hjust = 0.5),
           strip.text.y = element_text(size=11, color="black", face="plain"),
           strip.background = element_rect( fill = "white"))
-ggplotly(p)
+p
 ```
 
 
@@ -157,10 +157,15 @@ ggplotly(p, tooltip = "x")
 plotly does not work in this case
  
 ```{r}
+
+
+cols_color <- c("TRUE" = "#239B56", "FALSE" = "black")
+
 p <- ggplot(plotData )+
-  geom_tile(aes (x = SM, y = Value_order),
+  geom_tile(aes (x = SM, y = Value_order, fill = NOAEL),
+            
             color = "transparent",
-            width = 0.4,
+            width = 0.3,
             height = 0.6)+
   
   geom_text(aes(x = SM, y = Value_order, label = paste(Dose, " mg/kg/day")),
@@ -170,20 +175,22 @@ p <- ggplot(plotData )+
   
     scale_x_log10(limits = c(min(plotData$SM/2), max(plotData$SM*2)),sec.axis = dup_axis())+
   ylim(c(0.5, 4))+
+  scale_fill_manual(values = cols_color)+
     facet_nested( Species+ Months ~ .)+
   
     labs(x = "Safety Margin", title = "Summary of Toxicology Studies")+
     theme_bw(base_size=12)+
     theme(axis.title.y = element_blank(),
-          # axis.ticks.y= element_blank(),
-          # axis.text.y = element_blank(),
-          # panel.grid.major = element_blank(),
-          # panel.grid.minor = element_blank(),
-          # plot.title = element_text(hjust = 0.5),
-          # strip.text.y = element_text(size=11, color="black", face="plain"),
+          axis.ticks.y= element_blank(),
+          axis.text.y = element_blank(),
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          plot.title = element_text(hjust = 0.5),
+          legend.position = "none",
+          strip.text.y = element_text(size=11, color="black", face="plain"),
           strip.background = element_rect( fill = "white"))
 
-ggplotly(p)
+ggplotly(p, tooltip = "x")
 
 ```
   
@@ -202,7 +209,7 @@ p <- ggplot(plotData )+
                fontface = "bold")+
                #position = ggstance::position_dodge2v(height = 1, preserve = "total",padding=2))+
   
-  #scale_x_log10(limits = c(min(plotData$SM/2), max(plotData$SM*2))+
+   scale_x_log10(limits = c(min(plotData$SM/2), max(plotData$SM*2)))+
   ylim(c(0.5, 4))+
   
     facet_nested( Species+ Months ~ .)+
@@ -217,8 +224,8 @@ p <- ggplot(plotData )+
           # plot.title = element_text(hjust = 0.5),
           # strip.text.y = element_text(size=11, color="black", face="plain"),
           strip.background = element_rect( fill = "white"))
-#ggplotly(p)
-p
+ggplotly(p, tooltip = "x")
+
 ```
 
 
