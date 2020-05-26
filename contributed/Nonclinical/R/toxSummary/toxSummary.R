@@ -11,6 +11,7 @@ library(RColorBrewer)
 library(patchwork)
 library(ggh4x)
 library(DT)
+library(plotly)
 # Bugs ####
 
 # Project Improvement Ideas:
@@ -619,13 +620,13 @@ server <- function(input,output,session) {
   plotHeight <- function() {
     plotData <- calculateSM()
     nStudies <- length(unique(plotData$Study))
-    plotHeight <- 100+200*nStudies
+    plotHeight <- as.numeric(200*nStudies)
   }
   
 
 ## Figure in UI
 
-  output$figure <- renderPlot({
+  output$figure <- renderPlotly({
     plotData <- calculateSM()
     
     ## plotdata for p plot (changed) ----
@@ -666,7 +667,7 @@ server <- function(input,output,session) {
       
       p <- ggplot(plotData )+
         geom_tile(aes (x = SM, y = Value_order, fill = NOAEL), 
-                  color = "transparent", width = 0.35, height = 0.6)+
+                  color = "transparent", width = 0.40, height = 0.65)+
         geom_text(aes(x = SM, y = Value_order, label = paste(Dose, " mg/kg/day")),
                   color = "white", fontface = "bold")+
         scale_x_log10(limits = c(min(plotData$SM/2), max(plotData$SM*2)),sec.axis = dup_axis())+
@@ -681,7 +682,7 @@ server <- function(input,output,session) {
               panel.grid.minor = element_blank(),
               plot.title = element_text(hjust = 0.5),
               legend.position = "none",
-              strip.text.y = element_text(size=11, color="black", face="plain"),
+              strip.text.y = element_text(size=7, color="black", face="plain"),
               strip.background = element_rect( fill = "white"))
       
       
@@ -717,14 +718,15 @@ server <- function(input,output,session) {
       
       #ggplotly(p, tooltip = "x")
       
-      p <- ggplotly(p, tooltip = "x") %>% 
+      p <- ggplotly(p, tooltip = "x", height = 800) %>% 
         style(showlegend = FALSE)
       q <- ggplotly(q) %>% 
         style(hoverinfo = "none")
-      subplot(p, q, nrows = 1, widths = c(0.8, 0.2), titleX = TRUE, titleY = TRUE) %>% 
+      subplot(p, q, nrows = 1, widths = c(0.7, 0.3), titleX = TRUE, titleY = TRUE) %>% 
         layout(title= "Summary of Toxicology Studies",
                xaxis = list(title = "Safety Margin"), 
                xaxis2 = list(title = "Findings"))
+               
       
       
      #  p <- ggplot(plotData_p)+
@@ -787,7 +789,7 @@ server <- function(input,output,session) {
      #  
       
     }
-  },height=plotHeight)
+  })
 
   observe({
     req(input$selectData)
@@ -943,7 +945,7 @@ ui <- dashboardPage(
         tabPanel('Figure',
                  actionButton('refreshPlot','Refresh Plot'),
                  br(),
-                 plotOutput('figure')
+                 plotlyOutput('figure')
         ),
         
         tabPanel('Table',
