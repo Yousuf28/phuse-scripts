@@ -38,8 +38,10 @@ Severity_level <- c('Absent', 'Present', 'Minimal', 'Mild','Moderate','Marked', 
 Severity <- factor(c('Absent', 'Minimal', 'Mild','Moderate','Marked', 'Severe', 'Present',  'Minimal', 'Mild','Moderate','Marked', 'Severe'), levels = Severity_level)
 Value <- c(rep(1, 12))
 
+Value_order <- c(rep(c(1,2,3), 4))
 
-plotData <- data.frame(Study, Dose, NOAEL, Dose_findings,Severity, SM, Value)
+
+plotData <- data.frame(Study, Dose, NOAEL, Dose_findings,Severity, SM, Value, Value_order)
 print(plotData)
 ```
 
@@ -139,6 +141,97 @@ color_manual <- c('transparent','black','#feb24c','#fd8d3c','#fc4e2a','#e31a1c',
 
 #color_man <- c('#b10026', '#e31a1c','#fc4e2a',  '#fd8d3c', '#feb24c', 'black', 'blue')
 ```
+
+
+### safety margin plot in geom_tile with plotly
+
+```{r safety margin and findings plot__ plotly}
+color_NOAEL <- c("TRUE" = "#239B56", "FALSE" = "black")
+
+marker <- list(
+  color = "red",
+  line = list(
+    width = 20, 
+    color = "black"
+ )
+)
+
+p <- ggplot(plotData )+
+  geom_tile(aes (x = SM, y = Value_order, fill = NOAEL), 
+            color = "transparent", width = 0.35, height = 0.6)+
+  geom_text(aes(x = SM, y = Value_order, label = paste(Dose, " mg/kg/day")),
+            color = "white", fontface = "bold")+
+  scale_x_log10(limits = c(min(plotData$SM/2), max(plotData$SM*2)),sec.axis = dup_axis())+
+  scale_fill_manual(values = color_NOAEL)+
+  facet_nested( Species+ Months ~ .)+
+  labs( title = "Summary of Toxicology Studies")+
+  theme_bw(base_size=12)+
+  theme(axis.title.y = element_blank(),
+          axis.ticks.y= element_blank(),
+          axis.text.y = element_blank(),
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          plot.title = element_text(hjust = 0.5),
+          legend.position = "none",
+          strip.text.y = element_text(size=11, color="black", face="plain"),
+          strip.background = element_rect( fill = "white"))
+
+
+q <- ggplot(findings_data_long)+
+    geom_col(aes(x= Findings, y = Value, fill = Severity, group = Dose),
+             position = position_stack(reverse = TRUE),
+             color = 'transparent')+
+    geom_text(aes(x = Findings, y = Value, label = Dose, group = Dose),
+              size = 4,
+              color = 'white',
+              fontface = 'bold',
+              position = position_stack(vjust = 0.5, reverse = TRUE))+
+    scale_y_discrete(position = 'right')+
+    scale_fill_manual(values = color_manual)+
+    facet_grid(Study ~ ., scales = 'free')+
+    theme_bw(base_size=12)+
+    theme(axis.title.y = element_blank(),
+           strip.text.y = element_blank(),
+           axis.ticks.y = element_blank(),
+           axis.text.y = element_blank(),
+           axis.title.x = element_blank(),
+           axis.text.x = element_text(angle = 90),
+         plot.title = element_text(hjust = 0.5),
+         panel.grid.major.y = element_blank(),
+         panel.grid.minor.y = element_blank(),
+         panel.grid.major.x = element_line(),
+         panel.grid.minor.x = element_blank(),
+         legend.justification = "top")+
+    labs(title = 'Findings' )+
+    guides(fill = guide_legend(override.aes = aes(label = "")))
+
+#p + q + plot_layout(ncol=2,widths=c(3,1))
+
+#ggplotly(p, tooltip = "x")
+
+p <- ggplotly(p, tooltip = "x") %>% 
+  style(showlegend = FALSE)
+q <- ggplotly(q) %>% 
+  style(hoverinfo = "none")
+subplot(p, q, nrows = 1, widths = c(0.8, 0.2), titleX = TRUE, titleY = TRUE) %>% 
+  layout(title= "Summary of Toxicology Studies",
+         xaxis = list(title = "Safety Margin"), 
+         xaxis2 = list(title = "Findings"))
+
+
+```
+
+```{r}
+(p <- ggplotly(qplot(data = mtcars, wt, mpg, geom = c("point", "smooth"))))
+
+# removes hoverinfo for the line/ribbon traces (use `plotly_json()` to verify!)
+
+style(p, hoverinfo = "none", traces = c(1))
+```
+
+
+
+
 
 
 ## Experimental Plots for Findings
