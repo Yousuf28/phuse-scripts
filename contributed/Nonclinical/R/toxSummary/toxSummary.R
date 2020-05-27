@@ -627,7 +627,11 @@ server <- function(input,output,session) {
                              extensions = list("Buttons" = NULL,
                                                 "ColReorder" = NULL), 
                              class = "cell-border stripe",
-                             caption = "Nonclinical Findings of Potential Clinical Relevance",
+                             #caption = "Nonclinical Findings of Potential Clinical Relevance",
+                             caption = htmltools::tags$caption(
+                               style = "caption-side: top; text-align: center; font-size: 20px; color: black",
+                               "Table :", htmltools::strong("Nonclinical Findings of Potential Clinical Relevance")
+                             ),
                              options = list(
                                
                                #autoWidth = TRUE,
@@ -656,7 +660,8 @@ server <- function(input,output,session) {
   output$table_02 <- renderDT({
     plotData_tab <- calculateSM()
     plotData_tab <- plotData_tab %>% 
-      select(Study, Dose, NOAEL, Cmax, AUC, SM, finding_rev, Severity)
+    select( Findings,Rev, Study, Dose, SM) %>% 
+      group_by(Findings, Dose)
       
     plotData_tab <- datatable(plotData_tab, rownames = FALSE, class = "cell-border stripe",
                               
@@ -666,15 +671,24 @@ server <- function(input,output,session) {
                                 initComplete = JS(
                                   "function(settings, json) {",
                                   "$(this.api().table().header()).css({'background-color': '#000', 'color': '#fff'});",
-                                  "}")
-                              ))
+                                  "}"),
+                                
+                                rowsGroup = list(0,1,2)))
+    path <- "yousuf" # folder containing dataTables.rowsGroup.js
+    dep <- htmltools::htmlDependency(
+      "RowsGroup", "2.0.0", 
+      path, script = "dataTables.rowsGroup.js")
+    plotData_tab$dependencies <- c(plotData_tab$dependencies, list(dep))
+    plotData_tab
   })
   
   
+  ## from template 02 ----
   output$table_03 <- renderDT({
     plotData_tab <- calculateSM()
     plotData_tab <- plotData_tab %>% 
-      select(Study, Dose, NOAEL, Cmax, AUC, SM, finding_rev, Severity)
+      select(Study, Dose, NOAEL, Cmax, AUC, SM, Findings) %>% 
+      filter(NOAEL == TRUE)
       
     plotData_tab <- datatable(plotData_tab, rownames = FALSE, class = "cell-border stripe",
                               
@@ -684,8 +698,16 @@ server <- function(input,output,session) {
                                 initComplete = JS(
                                   "function(settings, json) {",
                                   "$(this.api().table().header()).css({'background-color': '#000', 'color': '#fff'});",
-                                  "}")
+                                  "}"),
+                                rowsGroup = list(0,1,2,3,4,5)
                               ))
+    
+    path <- "yousuf" # folder containing dataTables.rowsGroup.js
+    dep <- htmltools::htmlDependency(
+      "RowsGroup", "2.0.0", 
+      path, script = "dataTables.rowsGroup.js")
+    plotData_tab$dependencies <- c(plotData_tab$dependencies, list(dep))
+    plotData_tab
   })
 
   plotHeight <- function() {
