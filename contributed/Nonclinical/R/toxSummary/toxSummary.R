@@ -586,7 +586,7 @@ server <- function(input,output,session) {
           humanDose <- Data[['Clinical Information']][[input$humanDosing]][[paste0(humanDoseName,input$SMbasis)]]
           HED <- Dose
         }
-        SM[i] <- HED/humanDose
+        SM[i] <- round(HED/humanDose, digits = 2)
       }
     }
     plotData <- cbind(plotData,SM)
@@ -600,21 +600,92 @@ server <- function(input,output,session) {
     plotData_tab <- plotData_tab %>% 
       select(Study, Dose, NOAEL, Cmax, AUC, SM, finding_rev, Severity) %>% 
       pivot_wider(names_from = finding_rev, values_from = Severity, values_fill = list(Severity = "Absent"))
-    plotData_tab
+    plotData_tab <- datatable(plotData_tab, rownames = FALSE, class = "cell-border stripe",
+                              
+                              options = list(
+                                scrollY = TRUE,
+                                pageLength = 25,
+                                initComplete = JS(
+                                  "function(settings, json) {",
+                                  "$(this.api().table().header()).css({'background-color': '#000', 'color': '#fff'});",
+                                  "}")
+                              ))
   })
+  
+  ### change path ----
+  
+  # 
+  # options = list(autoWidth = TRUE,
+  #                scrollX = TRUE,
   
   output$table_01 <- renderDT({
     plotData_01 <- calculateSM()
     plotData_01 <- plotData_01 %>% 
       select( Study,Findings, Rev, Severity, Dose, SM) %>% 
       group_by(Study, Dose)
-    plotData_01 <- datatable(plotData_01,rownames = FALSE, options = list(rowsGroup = list(0,1,2,3)))
+    plotData_01 <- datatable(plotData_01,rownames = FALSE, 
+                             extensions = list("Buttons" = NULL,
+                                                "ColReorder" = NULL), 
+                             class = "cell-border stripe",
+                             caption = "Nonclinical Findings of Potential Clinical Relevance",
+                             options = list(
+                               
+                               #autoWidth = TRUE,
+                                            #columnDefs = list(list(width = "150px", targets = "_all")),
+                                            dom = "lfrtipB",
+                                            buttons = c("csv", "excel", "copy", "print"),
+                                            colReorder = TRUE,
+                                            pageLength = 25,
+                                            scrollY = TRUE,
+                                            initComplete = JS(
+                                              "function(settings, json) {",
+                                              "$(this.api().table().header()).css({'background-color': '#000', 'color': '#fff'});",
+                                              "}"),
+                             
+                                            rowsGroup = list(0,1,2,3)))
     path <- "yousuf" # folder containing dataTables.rowsGroup.js
     dep <- htmltools::htmlDependency(
       "RowsGroup", "2.0.0", 
       path, script = "dataTables.rowsGroup.js")
     plotData_01$dependencies <- c(plotData_01$dependencies, list(dep))
     plotData_01
+  })
+  
+  
+  
+  output$table_02 <- renderDT({
+    plotData_tab <- calculateSM()
+    plotData_tab <- plotData_tab %>% 
+      select(Study, Dose, NOAEL, Cmax, AUC, SM, finding_rev, Severity)
+      
+    plotData_tab <- datatable(plotData_tab, rownames = FALSE, class = "cell-border stripe",
+                              
+                              options = list(
+                                scrollY = TRUE,
+                                pageLength = 25,
+                                initComplete = JS(
+                                  "function(settings, json) {",
+                                  "$(this.api().table().header()).css({'background-color': '#000', 'color': '#fff'});",
+                                  "}")
+                              ))
+  })
+  
+  
+  output$table_03 <- renderDT({
+    plotData_tab <- calculateSM()
+    plotData_tab <- plotData_tab %>% 
+      select(Study, Dose, NOAEL, Cmax, AUC, SM, finding_rev, Severity)
+      
+    plotData_tab <- datatable(plotData_tab, rownames = FALSE, class = "cell-border stripe",
+                              
+                              options = list(
+                                scrollY = TRUE,
+                                pageLength = 25,
+                                initComplete = JS(
+                                  "function(settings, json) {",
+                                  "$(this.api().table().header()).css({'background-color': '#000', 'color': '#fff'});",
+                                  "}")
+                              ))
   })
 
   plotHeight <- function() {
@@ -631,7 +702,7 @@ server <- function(input,output,session) {
     
     ## plotdata for p plot (changed) ----
     plotData_p <- calculateSM() %>% 
-      select(Study, Species, Months, Dose, SM, Value, NOAEL) %>% 
+      select(Study, Species, Months, Dose, SM, Value, NOAEL, Value_order) %>% 
       group_by(Study, Dose, SM) %>% 
       unique()
     
@@ -665,10 +736,10 @@ server <- function(input,output,session) {
       color_NOAEL <- c("TRUE" = "#239B56", "FALSE" = "black")
       
       
-      p <- ggplot(plotData )+
+      p <- ggplot(plotData_p)+
         geom_tile(aes (x = SM, y = Value_order, fill = NOAEL), 
                   color = "transparent", width = 0.40, height = 0.65)+
-        geom_text(aes(x = SM, y = Value_order, label = paste(Dose, " mg/kg/day")),
+        geom_text(aes(x = SM, y = Value_order, label = paste(Dose, " mg/kg/day")), #DoseLabel changed
                   color = "white", fontface = "bold")+
         scale_x_log10(limits = c(min(plotData$SM/2), max(plotData$SM*2)),sec.axis = dup_axis())+
         scale_fill_manual(values = color_NOAEL)+
@@ -700,7 +771,7 @@ server <- function(input,output,session) {
         facet_grid(Study ~ ., scales = 'free')+
         theme_bw(base_size=12)+
         theme(axis.title.y = element_blank(),
-              strip.text.y = element_blank(),
+              #strip.text.y = element_blank(),
               axis.ticks.y = element_blank(),
               axis.text.y = element_blank(),
               axis.title.x = element_blank(),
