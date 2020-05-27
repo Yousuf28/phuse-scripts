@@ -9,8 +9,9 @@ ui <- fluidPage(
 
 server <- function(input, output){
   output[["table"]] <- renderDT({
-    dtable <- datatable(dat, rownames = FALSE, 
-                        options = list(
+    dtable <- datatable(dat, rownames = FALSE, extensions = "Buttons", class = "cell-border stripe",
+                        
+                        options = list(dom = "B", buttons = c("pdf"),
                           rowsGroup = list(0) # merge cells of column 1
                         ))
     path <- "yousuf" # folder containing dataTables.rowsGroup.js
