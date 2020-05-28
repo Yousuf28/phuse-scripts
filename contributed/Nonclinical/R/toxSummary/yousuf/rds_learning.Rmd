@@ -25,21 +25,13 @@ Data <- readRDS("Applications/test_tox.rds")
 ```
 
 
-```{r}
 
-find_rev <- c("[PR]", "[REV]")
-find_rev_clean <- gsub('\\[|\\]', '',find_rev)
-find_rev_clean
- 
-```
-
-
-```{r create plotData, eval=FALSE, include=FALSE}
+```{r create plotData}
 
 plotData <- data.frame(matrix(ncol = 13 ))
-column_names <- c("Study", "Species", "Months", "Dose", "NOAEL", "Cmax", "AUC", "Findings", "Reversibility", "Severity", "Value", "NOAEL_all", "Key_findings")
+column_names <- c("Study", "Species", "Months", "Dose", "NOAEL", "Cmax", "AUC", "Findings", "Reversibility", "Severity", "Value", "NOAEL_all", "value_order")
 colnames(plotData) <- column_names
-#plotData$NOAEL_all <- as.character(plotData$NOAEL_all)
+
 
 count <- 1
 
@@ -59,14 +51,12 @@ for (Study in names(Data[["Nonclinical Information"]])) {
         plotData[count, "AUC"] <- studyData[["Doses"]][[paste0("Dose", j)]][["AUC"]]
         plotData[count, "Findings"] <- studyData[["Findings"]][[paste0("Finding", i)]][["Finding"]]
         plotData[count, "Reversibility"] <- studyData[["Findings"]][[paste0("Finding", i)]][["Reversibility"]]
-        plotData[count,"Severity"] <- studyData[["Findings"]][[paste0("Finding", i)]][["Severity"]][[paste0("Dose", j)]]
+        plotData[count, "Severity"] <- studyData[["Findings"]][[paste0("Finding", i)]][["Severity"]][[paste0("Dose", j)]]
         plotData[count, "Value"] <- 1
-        
+        plotData[count, "value_order"] <- j
         plotData[count, "NOAEL_all"] <- paste0("Dose:", studyData[["Doses"]][[paste0("Dose", j)]][["Dose"]], ",",
                                                " AUC:", studyData[["Doses"]][[paste0("Dose", j)]][["AUC"]], ",",
                                                " Cmax: ", studyData[["Doses"]][[paste0("Dose", j)]][["Cmax"]])
-        plotData[count, "Key_findings"] <- studyData[["Findings"]][[paste0("Finding", i)]][["Finding"]]
-        
         count <- count+1
         
       }
@@ -78,7 +68,7 @@ plotData$Rev <- gsub("\\[|\\]", "", plotData$Reversibility)
 plotData$finding_rev <- paste0(plotData$Findings,"_", plotData$Rev)
 plotData$find_rev_b <- paste0(plotData$Findings, plotData$Reversibility)
 
-
+head(plotData)
 
 ```
 

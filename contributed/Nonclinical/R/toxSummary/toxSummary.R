@@ -813,7 +813,7 @@ server <- function(input,output,session) {
       #ggplotly(p, tooltip = "x")
       
       p <- ggplotly(p, tooltip = "x", height = plotHeight())
-      q <- ggplotly(q, tooltip = "x")
+      q <- ggplotly(q, tooltip = "x",  height = plotHeight())
       
       subplot(p, q, nrows = 1, widths = c(0.7, 0.3), titleX = TRUE, titleY = TRUE) %>% 
         layout(title= "Summary of Toxicology Studies",
