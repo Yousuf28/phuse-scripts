@@ -12,6 +12,7 @@ library(patchwork)
 library(ggh4x)
 library(DT)
 library(plotly)
+library(officer)
 # Bugs ####
 
 # Project Improvement Ideas:
@@ -763,7 +764,7 @@ server <- function(input,output,session) {
                   color = "transparent", width = 0.40, height = 0.65)+
         geom_text(aes(x = SM, y = Value_order, label = paste(Dose, " mg/kg/day")), #DoseLabel changed
                   color = "white", fontface = "bold")+
-        scale_x_log10(limits = c(min(plotData$SM/2), max(plotData$SM*2)),sec.axis = dup_axis())+
+        scale_x_log10(limits = c(min(plotData_p$SM/2), max(plotData_p$SM*2)),sec.axis = dup_axis())+
         scale_fill_manual(values = color_NOAEL)+
         facet_nested( Species+ Months ~ .)+
         labs( title = "Summary of Toxicology Studies")+
@@ -793,7 +794,7 @@ server <- function(input,output,session) {
         facet_grid(Study ~ ., scales = 'free')+
         theme_bw(base_size=12)+
         theme(axis.title.y = element_blank(),
-              #strip.text.y = element_blank(),
+              strip.text.y = element_blank(),
               axis.ticks.y = element_blank(),
               axis.text.y = element_blank(),
               axis.title.x = element_blank(),
@@ -811,10 +812,8 @@ server <- function(input,output,session) {
       
       #ggplotly(p, tooltip = "x")
       
-      p <- ggplotly(p, tooltip = "x", height = plotHeight()) %>% 
-        style(showlegend = FALSE)
-      q <- ggplotly(q) %>% 
-        style(hoverinfo = "none")
+      p <- ggplotly(p, tooltip = "x", height = plotHeight())
+      q <- ggplotly(q, tooltip = "x")
       
       subplot(p, q, nrows = 1, widths = c(0.7, 0.3), titleX = TRUE, titleY = TRUE) %>% 
         layout(title= "Summary of Toxicology Studies",
