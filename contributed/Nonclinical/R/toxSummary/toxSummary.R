@@ -32,6 +32,13 @@ library(officer)
 # - Stagger doses (down -> up) so they don't overlap when close
 # - use error bar to combine findings across doses
 
+## added by Yousuf
+
+### need to add or change in 3rd table of template
+# correct the HED calculation
+# add starting Dose and MHRD 
+# add 
+
 
 '%ni%' <- Negate('%in%')
 
@@ -542,6 +549,7 @@ server <- function(input,output,session) {
   
 })
   
+  ### {]{[][][][][][][]}} working ----
   
   output$humanDosing <- renderUI({
     req(input$clinDosing)
@@ -551,7 +559,9 @@ server <- function(input,output,session) {
     if (length(clinDosingNames)>0) {
       for (clinDose in input$clinDosing) {
         if (Data[['Clinical Information']][['MgKg']]==F) {
-          names(clinDosingNames)[which(clinDosingNames==clinDose)] <- paste0(clinDose,': (',Data[['Clinical Information']][[clinDose]][[paste0(unlist(strsplit(clinDose,' ')),collapse='')]],' mg)')
+          names(clinDosingNames)[which(clinDosingNames==clinDose)] <- paste0(clinDose,
+                                                                             ': (',Data[['Clinical Information']][[clinDose]][[paste0(unlist(strsplit(clinDose,' ')),
+                                                                                                                                      collapse='')]],' mg)')
         } else {
           names(clinDosingNames)[which(clinDosingNames==clinDose)] <- paste0(clinDose,': (',Data[['Clinical Information']][[clinDose]][[paste0(unlist(strsplit(clinDose,' ')),'MgKg',collapse='')]],' mg/kg)')
         }
@@ -564,6 +574,7 @@ server <- function(input,output,session) {
   calculateSM <- reactive({
     Data <- getData()
     plotData <- getPlotData()
+    HED_value <- NULL
     SM <- NULL
     if (nrow(plotData)>0) {
       for (i in seq(nrow(plotData))) {
@@ -587,10 +598,11 @@ server <- function(input,output,session) {
           humanDose <- Data[['Clinical Information']][[input$humanDosing]][[paste0(humanDoseName,input$SMbasis)]]
           HED <- Dose
         }
+        HED_value[i] <- round(HED, digits = 2) ##for table 03
         SM[i] <- round(HED/humanDose, digits = 2)
       }
     }
-    plotData <- cbind(plotData,SM)
+    plotData <- cbind(plotData,SM, HED_value)
     return(plotData)
   })
 
@@ -599,7 +611,7 @@ server <- function(input,output,session) {
   output$table <- renderDT({
     plotData_tab <- calculateSM()
     plotData_tab <- plotData_tab %>% 
-      select(Study, Dose, NOAEL, Cmax, AUC, SM, finding_rev, Severity) %>% 
+      select(Study, Dose, NOAEL, Cmax, AUC, SM,HED_value, finding_rev, Severity) %>% 
       pivot_wider(names_from = finding_rev, values_from = Severity, values_fill = list(Severity = "Absent"))
     plotData_tab <- datatable(plotData_tab, rownames = FALSE, class = "cell-border stripe",
                               
@@ -709,6 +721,47 @@ server <- function(input,output,session) {
       path, script = "dataTables.rowsGroup.js")
     plotData_tab$dependencies <- c(plotData_tab$dependencies, list(dep))
     plotData_tab
+  })
+  
+  
+  ## table 04 ----
+  
+  output$table_04 <- renderDT({
+    plotData_04 <- calculateSM()
+    plotData_04 <- plotData_04 %>% 
+      select( Study,NOAEL, Dose, SM , HED_value, Cmax, AUC ) %>% 
+      unique() %>% 
+      filter(NOAEL == TRUE) %>% 
+      select(-NOAEL) %>% 
+      dplyr::rename( HED = HED_value, NOAEL = Dose) %>% 
+      dplyr::mutate('Starting Dose' = NA, MRHD = NA) # have to change
+    
+    
+      
+    plotData_04 <- datatable(plotData_04,rownames = FALSE, 
+                             extensions = list("Buttons" = NULL,
+                                               "ColReorder" = NULL), 
+                             class = "cell-border stripe",
+                           
+                             caption = htmltools::tags$caption(
+                               style = "caption-side: top; text-align: center; font-size: 20px; color: black",
+                               "Table :", htmltools::strong("Safety Margins Based on NOAEL from Pivotal Toxicology Studies")
+                             ),
+                             options = list(
+                               
+                               #autoWidth = TRUE,
+                               #columnDefs = list(list(width = "150px", targets = "_all")),
+                               dom = "lfrtipB",
+                               buttons = c("csv", "excel", "copy", "print"),
+                               colReorder = TRUE,
+                               pageLength = 10,
+                               scrollY = TRUE,
+                               initComplete = JS(
+                                 "function(settings, json) {",
+                                 "$(this.api().table().header()).css({'background-color': '#000', 'color': '#fff'});",
+                                 "}")))
+
+    plotData_04
   })
 
   plotHeight <- function() {
@@ -1054,7 +1107,11 @@ ui <- dashboardPage(
       ),
       tabPanel("Table_03",
                DT::dataTableOutput('table_03')
+      ),
+      tabPanel("Table_04",
+               DT::dataTableOutput('table_04')
       )
+      
       
      
   ))))
