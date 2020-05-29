@@ -783,17 +783,11 @@ server <- function(input,output,session) {
       dplyr::arrange(Findings, Rev, Study) %>% 
       flextable() %>% 
       merge_v(j = ~ Findings + Rev + Study) %>% 
-      fontsize(size = 18, part = "all") %>% 
-      flextable::autofit(add_w = 2) %>% 
       
-      set_header_labels(Findings = "Nonclinical Findings of Potential Clinical Relevance",
-                        Rev = "Nonclinical Findings of Potential Clinical Relevance",
-                        Study = "Nonclinical Findings of Potential Clinical Relevance",
-                        Dose = "Nonclinical Findings of Potential Clinical Relevance",
-                        SM = "Nonclinical Findings of Potential Clinical Relevance") %>% 
-      merge_at( i = 1, j = 1:5, part = "header") %>% 
-      align( align = "center", part = "header") %>% 
+      flextable::autofit(add_w = 1) %>% 
+      add_header_row(values = c("Nonclinical Findings of Potential Clinical Relevance"), colwidths = c(5)) %>% 
       theme_box() %>% 
+      fontsize(size = 18, part = "all") %>% 
       htmltools_value()
     
     plotData_tab
@@ -835,19 +829,11 @@ server <- function(input,output,session) {
       dplyr::arrange(Study, NOAEL) %>% 
       flextable() %>% 
       #merge_v(j = ~ Study + NOAEL + Cmax+ AUC) %>% 
-      fontsize(size = 18, part = "all") %>% 
-      flextable::autofit(add_w = 0.8, add_h = 1) %>% 
-      set_header_labels(Study = "Nonclinical",
-                        NOAEL = "Nonclinical",
-                        SM = "Nonclinical",
-                        HED = "Nonclinical",
-                        Cmax = "Nonclinical",
-                        AUC = "Nonclinical",
-                        "Starting Dose"= "Clinical Safety Margins",
-                        MHRD = "Clinical Safety Margins") %>% 
-      merge_at(i = 1, j = 1:6, part = "header") %>% 
-      merge_at(i=1, j= 7:8, part = "header") %>% 
+      
+      flextable::autofit(add_w = 1) %>% 
+      add_header_row(values = c("Nonclinical", "Clinical Safety Margins"), colwidths = c(6,2)) %>% 
       theme_box() %>% 
+      fontsize(size = 18, part = "all") %>% 
       htmltools_value()
     
     plotData_tab
