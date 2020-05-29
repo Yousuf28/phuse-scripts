@@ -13,6 +13,7 @@ library(ggh4x)
 library(DT)
 library(plotly)
 library(officer)
+library(flextable)
 # Bugs ####
 
 # Project Improvement Ideas:
@@ -659,7 +660,8 @@ server <- function(input,output,session) {
                                               "$(this.api().table().header()).css({'background-color': '#000', 'color': '#fff'});",
                                               "}"),
                              
-                                            rowsGroup = list(0,1,2,3)))
+                                            rowsGroup = list(0,1,2,3))) %>% 
+      formatStyle(columns = colnames(plotData_01), `font-size` = "18px")
     path <- "yousuf" # folder containing dataTables.rowsGroup.js
     dep <- htmltools::htmlDependency(
       "RowsGroup", "2.0.0", 
@@ -686,7 +688,8 @@ server <- function(input,output,session) {
                                   "$(this.api().table().header()).css({'background-color': '#000', 'color': '#fff'});",
                                   "}"),
                                 
-                                rowsGroup = list(0,1,2)))
+                                rowsGroup = list(0,1,2))) %>% 
+      formatStyle(columns = colnames(plotData_tab), `font-size` = "18px")
     path <- "yousuf" # folder containing dataTables.rowsGroup.js
     dep <- htmltools::htmlDependency(
       "RowsGroup", "2.0.0", 
@@ -713,7 +716,8 @@ server <- function(input,output,session) {
                                   "$(this.api().table().header()).css({'background-color': '#000', 'color': '#fff'});",
                                   "}"),
                                 rowsGroup = list(0,1,2,3,4,5)
-                              ))
+                              )) %>% 
+      formatStyle(columns = colnames(plotData_tab), `font-size` = "18px")
     
     path <- "yousuf" # folder containing dataTables.rowsGroup.js
     dep <- htmltools::htmlDependency(
@@ -759,10 +763,99 @@ server <- function(input,output,session) {
                                initComplete = JS(
                                  "function(settings, json) {",
                                  "$(this.api().table().header()).css({'background-color': '#000', 'color': '#fff'});",
-                                 "}")))
+                                 "}"))) %>% 
+      formatStyle(columns = colnames(plotData_04), `font-size` = "18px")
 
     plotData_04
   })
+  
+  
+  
+  
+  
+  ### flextable for (table 01) ----
+  
+  output$table_01_flex <- renderUI({
+    plotData_tab <- calculateSM()
+    plotData_tab <- plotData_tab %>% 
+      select( Findings,Rev, Study, Dose, SM) %>% 
+      #group_by(Findings, Rev, Study) %>% 
+      dplyr::arrange(Findings, Rev, Study) %>% 
+      flextable() %>% 
+      merge_v(j = ~ Findings + Rev + Study) %>% 
+      fontsize(size = 18, part = "all") %>% 
+      flextable::autofit(add_w = 2) %>% 
+      
+      set_header_labels(Findings = "Nonclinical Findings of Potential Clinical Relevance",
+                        Rev = "Nonclinical Findings of Potential Clinical Relevance",
+                        Study = "Nonclinical Findings of Potential Clinical Relevance",
+                        Dose = "Nonclinical Findings of Potential Clinical Relevance",
+                        SM = "Nonclinical Findings of Potential Clinical Relevance") %>% 
+      merge_at( i = 1, j = 1:5, part = "header") %>% 
+      align( align = "center", part = "header") %>% 
+      theme_box() %>% 
+      htmltools_value()
+    
+    plotData_tab
+    
+  })
+  
+  
+  
+  output$table_02_flex <- renderUI({
+    plotData_tab <- calculateSM()
+    plotData_tab <- plotData_tab %>% 
+      dplyr::select(Study, Dose, NOAEL, Cmax, AUC, Findings) %>% 
+      filter(NOAEL == TRUE) %>% 
+      dplyr::select(-NOAEL) %>% 
+      #group_by(Findings, Rev, Study) %>% 
+      dplyr::arrange(Study, Dose) %>% 
+      flextable() %>% 
+      merge_v(j = ~ Study + Dose + Cmax+ AUC) %>% 
+      fontsize(size = 18, part = "all") %>% 
+      flextable::autofit(add_w = 1) %>% 
+      theme_box() %>% 
+      htmltools_value()
+    
+    plotData_tab
+    
+  })
+  
+  
+  
+  output$table_03_flex <- renderUI({
+    plotData_tab <- calculateSM()
+    plotData_tab <- plotData_tab %>% 
+      select( Study,NOAEL, Dose, SM , HED_value, Cmax, AUC ) %>% 
+      unique() %>% 
+      filter(NOAEL == TRUE) %>% 
+      select(-NOAEL) %>% 
+      dplyr::rename( HED = HED_value, NOAEL = Dose) %>% 
+      dplyr::mutate('Starting Dose' = NA, MRHD = NA) %>% 
+      dplyr::arrange(Study, NOAEL) %>% 
+      flextable() %>% 
+      #merge_v(j = ~ Study + NOAEL + Cmax+ AUC) %>% 
+      fontsize(size = 18, part = "all") %>% 
+      flextable::autofit(add_w = 0.8, add_h = 1) %>% 
+      set_header_labels(Study = "Nonclinical",
+                        NOAEL = "Nonclinical",
+                        SM = "Nonclinical",
+                        HED = "Nonclinical",
+                        Cmax = "Nonclinical",
+                        AUC = "Nonclinical",
+                        "Starting Dose"= "Clinical Safety Margins",
+                        MHRD = "Clinical Safety Margins") %>% 
+      merge_at(i = 1, j = 1:6, part = "header") %>% 
+      merge_at(i=1, j= 7:8, part = "header") %>% 
+      theme_box() %>% 
+      htmltools_value()
+    
+    plotData_tab
+    
+  })
+  
+  
+  
 
   plotHeight <- function() {
     plotData <- calculateSM()
@@ -1108,8 +1201,21 @@ ui <- dashboardPage(
       tabPanel("Table_03",
                DT::dataTableOutput('table_03')
       ),
+      
       tabPanel("Table_04",
                DT::dataTableOutput('table_04')
+      ),
+      
+      tabPanel("Table_01_flex",
+               uiOutput('table_01_flex')
+      ),
+      
+      tabPanel("Table_02_flex",
+               uiOutput('table_02_flex')
+      ),
+      
+      tabPanel("Table_03_flex",
+               uiOutput('table_03_flex')
       )
       
       

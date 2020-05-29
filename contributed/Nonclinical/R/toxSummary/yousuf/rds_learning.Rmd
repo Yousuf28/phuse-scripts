@@ -338,3 +338,17 @@ plot(dist ~ speed, cars, main = title)
 plot(1, main=paste("X:",1," ","Y:", 2," ","\nZ:",3))
 ```
 
+
+```{r}
+datatable(head(iris, 20), options = list(
+  initComplete = JS("
+                        function(settings, json) {
+                          $(this.api().table().header()).css({
+                          'font-size': '12px',
+                          });
+                        }
+                    ")
+)) %>%
+  formatStyle(columns = colnames(.$x$data), `font-size` = "12px")
+```
+
