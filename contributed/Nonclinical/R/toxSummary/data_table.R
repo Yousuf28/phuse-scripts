@@ -45,13 +45,16 @@ server <- function(input, output) {
   library(dplyr)
   output$mtcars_ft <- renderUI({
     req(input$mpg)
-    mtcars %>%
+    
+    mtcar_tab <- mtcars %>%
       mutate(car = rownames(.)) %>%
       select(car, everything()) %>%
       filter(mpg <= input$mpg) %>%
       flextable() %>%
-      theme_booktabs() %>%
-      htmltools_value()
+      theme_box() %>%
+      htmltools_value
+    
+    
   })
 }
 

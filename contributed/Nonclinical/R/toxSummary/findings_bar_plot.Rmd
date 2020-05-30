@@ -222,6 +222,35 @@ subplot(p, q, nrows = 1, widths = c(0.8, 0.2), titleX = TRUE, titleY = TRUE) %>%
 ```
 
 ```{r}
+## create in plotly only
+
+fig <- plot_ly(data = plotData, x = ~SM, y = ~Value_order) %>% 
+  add_markers()
+
+subplot(fig, nrow=4)
+
+
+
+
+```
+
+```{r}
+fig <- plotData
+fig <- fig %>% tidyr::gather(variable, value, -Study)
+fig <- fig %>% transform(id = as.integer(factor(variable)))
+fig <- fig %>% plot_ly(x = ~Study, y = ~value, color = ~variable, colors = "Dark2",
+          yaxis = ~paste0("y", id))
+fig <- fig %>% add_lines()
+fig <- fig %>% subplot(nrows = 5, shareX = TRUE)
+
+fig
+```
+
+
+
+
+
+```{r}
 (p <- ggplotly(qplot(data = mtcars, wt, mpg, geom = c("point", "smooth"))))
 
 # removes hoverinfo for the line/ribbon traces (use `plotly_json()` to verify!)
@@ -834,5 +863,19 @@ p <- ggplot(plotData )+
           strip.text.y = element_text(size=11, color="black", face="bold"),
           strip.background = element_rect( fill = "white"))
 ggplotly(p)
+```
+
+
+
+```{r}
+fig <- economics
+fig <- fig %>% tidyr::gather(variable, value, -date)
+fig <- fig %>% transform(id = as.integer(factor(variable)))
+fig <- fig %>% plot_ly(x = ~date, y = ~value, color = ~variable, colors = "Dark2",
+          yaxis = ~paste0("y", id))
+fig <- fig %>% add_lines()
+fig <- fig %>% subplot(nrows = 5, shareX = TRUE)
+
+fig
 ```
 
