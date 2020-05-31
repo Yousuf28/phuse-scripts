@@ -14,6 +14,7 @@ library(DT)
 library(plotly)
 library(officer)
 library(flextable)
+library(magrittr)
 # Bugs ####
 
 # Project Improvement Ideas:
@@ -506,12 +507,14 @@ server <- function(input,output,session) {
   
   # Create PlotData (changed) -----
   
+  print("510")
+  
  getPlotData <- reactive({
   Data <- getData()
-  plotData <- data.frame(matrix(ncol = 12 ))
+  plotData <- data.frame(matrix(ncol = 14 ))
   column_names <- c("Study", "Species", "Months", "Dose", 
                     "NOAEL", "Cmax", "AUC", "Findings",
-                    "Reversibility", "Severity", "Value", "Value_order")
+                    "Reversibility", "Severity", "Value", "Value_order", "SM", "HED_value")
   colnames(plotData) <- column_names
   
   count <- 1
@@ -535,7 +538,10 @@ server <- function(input,output,session) {
           plotData[count, "Severity"] <- studyData[["Findings"]][[paste0("Finding", i)]][["Severity"]][[paste0("Dose", j)]]
           plotData[count, "Value"] <- 1
           plotData[count, "Value_order"] <- j
+          plotData[count, "SM"] <- NA
+          plotData[count, "HED_value"] <- NA
           count <- count+1
+          
           
         }
       }
@@ -550,7 +556,7 @@ server <- function(input,output,session) {
   
 })
   
-  ### {]{[][][][][][][]}} working ----
+print("559")
   
   output$humanDosing <- renderUI({
     req(input$clinDosing)
@@ -575,8 +581,8 @@ server <- function(input,output,session) {
   calculateSM <- reactive({
     Data <- getData()
     plotData <- getPlotData()
-    HED_value <- NULL
-    SM <- NULL
+    # HED_value <- NULL
+    # SM <- NULL
     if (nrow(plotData)>0) {
       for (i in seq(nrow(plotData))) {
         if (input$SMbasis=='HED') {
@@ -599,11 +605,11 @@ server <- function(input,output,session) {
           humanDose <- Data[['Clinical Information']][[input$humanDosing]][[paste0(humanDoseName,input$SMbasis)]]
           HED <- Dose
         }
-        HED_value[i] <- round(HED, digits = 2) ##for table 03
-        SM[i] <- round(HED/humanDose, digits = 2)
+        plotData[i, "HED_value"]<- round(HED, digits = 2) ##for table 03
+        plotData[i, "SM"] <- round(HED/humanDose, digits = 2)
       }
     }
-    plotData <- cbind(plotData,SM, HED_value)
+    #plotData <- cbind(plotData,SM, HED_value)
     return(plotData)
   })
 
@@ -815,30 +821,55 @@ server <- function(input,output,session) {
     
   })
   
+  ## {}{}{}{}{}{}{}{}{   }  ------
   
-  
-  output$table_03_flex <- renderUI({
+  #table 03 
+  table_03_fun <- reactive({
     plotData_tab <- calculateSM()
-    plotData_tab <- plotData_tab %>% 
-      select( Study,NOAEL, Dose, SM , HED_value, Cmax, AUC ) %>% 
-      unique() %>% 
-      filter(NOAEL == TRUE) %>% 
-      select(-NOAEL) %>% 
-      dplyr::rename( HED = HED_value, NOAEL = Dose) %>% 
-      dplyr::mutate('Starting Dose' = NA, MRHD = NA) %>% 
+    plotData_tab <- plotData_tab %>%
+      select( Study,NOAEL, Dose, HED_value, Cmax, AUC ) %>%
+      unique() %>%
+      filter(NOAEL == TRUE) %>%
+      select(-NOAEL) %>%
+      dplyr::rename( NOAEL = Dose, HED = HED_value) %>%
+      dplyr::mutate('Starting Dose' = NA, MRHD = NA) %>%
       dplyr::arrange(Study, NOAEL) %>% 
-      flextable() %>% 
-      #merge_v(j = ~ Study + NOAEL + Cmax+ AUC) %>% 
-      
-      flextable::autofit(add_w = 1) %>% 
-      add_header_row(values = c("Nonclinical", "Clinical Safety Margins"), colwidths = c(6,2)) %>% 
-      theme_box() %>% 
-      fontsize(size = 18, part = "all") %>% 
-      htmltools_value()
-    
+    flextable() %>%
+    #merge_v(j = ~ Study + NOAEL + Cmax+ AUC) %>%
+
+    flextable::autofit() %>%
+    add_header_row(values = c("Nonclinical", "Clinical Safety Margins"), colwidths = c(5,2)) %>%
+    add_header_row(values = c("Safety Margins Based on NOAEL from Pivotal Toxicology Studies"), colwidths = c(7)) %>%
+    theme_box() %>%
+    fontsize(size = 12, part = "all")
     plotData_tab
     
+    
   })
+  
+  output$table_03_flex <- renderUI({
+    table_03_fun() %>% 
+      htmltools_value()
+    
+  })
+  
+  
+  observeEvent(table_03_fun(), {save_as_docx(table_03_fun(), path = "table_03.docx")})
+  
+  
+  
+  output$down_03 <- downloadHandler(
+    filename = function() {
+      paste("table_03", ".docx")
+    },
+    content = function(file) {
+      file.copy("table_03.docx", file)
+      
+      
+    }
+  )
+  
+  
   
   
   
@@ -1193,15 +1224,19 @@ ui <- dashboardPage(
       ),
       
       tabPanel("Table_01_flex",
-               uiOutput('table_01_flex')
+               uiOutput('table_01_flex'),
+               downloadButton('down_01', 'Download')
       ),
       
       tabPanel("Table_02_flex",
-               uiOutput('table_02_flex')
+               uiOutput('table_02_flex'),
+               downloadButton('down_02', 'Download')
       ),
       
       tabPanel("Table_03_flex",
-               uiOutput('table_03_flex')
+               h4("Safety Margins Based on NOAEL from Pivotal Toxicology Studies"),
+               uiOutput('table_03_flex'),
+               downloadButton('down_03', 'Download')
       )
       
       
