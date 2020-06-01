@@ -145,7 +145,7 @@ color_manual <- c('transparent','black','#feb24c','#fd8d3c','#fc4e2a','#e31a1c',
 
 ### safety margin plot in geom_tile with plotly
 
-```{r safety margin and findings plot__ plotly}
+```{r safety margin and findings plot__ plotly, eval=FALSE, include=FALSE}
 color_NOAEL <- c("TRUE" = "#239B56", "FALSE" = "black")
 
 marker <- list(
@@ -224,15 +224,74 @@ subplot(p, q, nrows = 1, widths = c(0.8, 0.2), titleX = TRUE, titleY = TRUE) %>%
 ```{r}
 ## create in plotly only
 
-fig <- plot_ly(data = plotData, x = ~SM, y = ~Value_order) %>% 
-  add_markers()
+marker_man <- list(size = 10,
+                             color = 'rgba(255, 182, 193, .9)',
+                             line = list(color = 'rgba(152, 0, 0, .8)',
+                                      width = 2))
+  dose <- as.character(plotData$Dose)
 
-subplot(fig, nrow=4)
+ pal <- c("black", "#239B56")  
+  
+fig_plotdata <- plotData %>% 
+  group_by(Study) %>% 
+  group_map(~ plot_ly(data = ., x = ~ SM, y= ~Value_order, color = ~NOAEL, text= ~paste(Dose,"mg/kg/day"), type = "scatter", mode= "markers+text", symbols = "square-dot",colors = pal,  marker = list(size = 50, symbol = "square-open"))) %>%
+  
+  # layout(xaxis = list(type = "log")) %>% 
+  subplot(nrows = 4, shareX = TRUE, shareY = TRUE)
+
+
+fig_plotdata
 
 
 
 
 ```
+
+
+```{r}
+fig <- plot_ly(data = iris, x = ~Sepal.Length, y = ~Petal.Length,
+               marker = list(size = 10,
+                             color = 'rgba(255, 182, 193, .9)',
+                             line = list(color = 'rgba(152, 0, 0, .8)',
+                                         width = 2)))
+fig <- fig %>% layout(title = 'Styled Scatter',
+         yaxis = list(zeroline = FALSE),
+         xaxis = list(zeroline = FALSE))
+
+fig
+```
+
+
+```{r}
+library(dplyr)
+iris%>%
+  group_by(Species) %>%
+  group_map(~ plot_ly(data=., x = ~Sepal.Length, y = ~Sepal.Width, color = ~Species, type = "scatter", mode="markers"), keep=TRUE) %>%
+  subplot(nrows = 1, shareX = TRUE, shareY=TRUE)
+```
+
+
+```{r}
+
+
+```
+
+```{r}
+library(trelliscopejs)
+color_NOAEL <- c("TRUE" = "#239B56", "FALSE" = "black")
+  ggplot(plotData )+
+  geom_tile(aes (x = SM, y = Value_order, fill = NOAEL), 
+            color = "transparent", width = 0.35, height = 0.6)+
+    facet_trelliscope(~ Study, as_plotly = TRUE)
+```
+
+
+```{r}
+mtcars %>% 
+  ggplot(aes(x = mpg, y= hp, fill = gear))+
+  geom_point()
+```
+
 
 ```{r}
 fig <- plotData
