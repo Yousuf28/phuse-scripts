@@ -781,7 +781,7 @@ print("559")
   
   ### flextable for (table 01) ----
   
-  output$table_01_flex <- renderUI({
+  table_01_fun <- reactive({
     plotData_tab <- calculateSM()
     plotData_tab <- plotData_tab %>% 
       select( Findings,Rev, Study, Dose, SM) %>% 
@@ -790,19 +790,52 @@ print("559")
       flextable() %>% 
       merge_v(j = ~ Findings + Rev + Study) %>% 
       
-      flextable::autofit(add_w = 1) %>% 
+      #flextable::autofit(add_w = 1) %>% 
       add_header_row(values = c("Nonclinical Findings of Potential Clinical Relevance"), colwidths = c(5)) %>% 
-      theme_box() %>% 
-      fontsize(size = 18, part = "all") %>% 
-      htmltools_value()
-    
+      theme_box()
+      #fontsize(size = 18, part = "all") %>% 
     plotData_tab
     
   })
   
+  output$table_01_flex <- renderUI({
+    table_01_fun() %>% 
+      flextable::autofit(add_w = 1) %>% 
+      fontsize(size = 18, part = "all") %>% 
+      htmltools_value()
+    
+  })
+  
+  table_01_down <- reactive({
+    table_01_fun() %>% 
+      
+      #flextable::autofit() %>% 
+      fit_to_width( max_width = 7) %>% 
+      fontsize(size = 12, part = "all")
+  })
+  
+  observeEvent(table_01_down(), {save_as_docx(table_01_down(), path = "table_01.docx")})
   
   
-  output$table_02_flex <- renderUI({
+  
+  output$down_01 <- downloadHandler(
+    filename = function() {
+      paste("table_01", ".docx")
+    },
+    content = function(file) {
+      file.copy("table_01.docx", file)
+      
+      
+    }
+  )
+  
+  
+  
+  
+  
+  #### flextable 02
+  
+  table_02_fun <- reactive({
     plotData_tab <- calculateSM()
     plotData_tab <- plotData_tab %>% 
       dplyr::select(Study, Dose, NOAEL, Cmax, AUC, Findings) %>% 
@@ -812,16 +845,49 @@ print("559")
       dplyr::arrange(Study, Dose) %>% 
       flextable() %>% 
       merge_v(j = ~ Study + Dose + Cmax+ AUC) %>% 
-      fontsize(size = 18, part = "all") %>% 
-      flextable::autofit(add_w = 1) %>% 
-      theme_box() %>% 
-      htmltools_value()
-    
+      #fontsize(size = 18, part = "all") %>% 
+      #flextable::autofit(add_w = 1) %>% 
+      theme_box()
     plotData_tab
     
   })
   
-  ## {}{}{}{}{}{}{}{}{   }  ------
+  
+  output$table_02_flex <- renderUI({
+    table_02_fun() %>% 
+      flextable::autofit(add_w = 1) %>% 
+      fontsize(size = 18, part = "all") %>% 
+      htmltools_value()
+    
+  })
+  
+  table_02_down <- reactive({
+    table_02_fun() %>% 
+      
+      #flextable::autofit() %>% 
+      fit_to_width( max_width = 7) %>% 
+      fontsize(size = 12, part = "all")
+  })
+  
+  observeEvent(table_02_down(), {save_as_docx(table_02_down(), path = "table_02.docx")})
+  
+  
+  
+  output$down_02 <- downloadHandler(
+    filename = function() {
+      paste("table_02", ".docx")
+    },
+    content = function(file) {
+      file.copy("table_02.docx", file)
+      
+      
+    }
+  )
+  
+  
+  
+  
+ #### flextable 03 -----
   
   #table 03 
   table_03_fun <- reactive({
@@ -834,14 +900,12 @@ print("559")
       dplyr::rename( NOAEL = Dose, HED = HED_value) %>%
       dplyr::mutate('Starting Dose' = NA, MRHD = NA) %>%
       dplyr::arrange(Study, NOAEL) %>% 
-    flextable() %>%
-    #merge_v(j = ~ Study + NOAEL + Cmax+ AUC) %>%
-
-    flextable::autofit() %>%
-    add_header_row(values = c("Nonclinical", "Clinical Safety Margins"), colwidths = c(5,2)) %>%
-    add_header_row(values = c("Safety Margins Based on NOAEL from Pivotal Toxicology Studies"), colwidths = c(7)) %>%
-    theme_box() %>%
-    fontsize(size = 12, part = "all")
+      flextable() %>%
+    #flextable::autofit() %>%
+     add_header_row(values = c("Nonclinical", "Clinical Safety Margins"), colwidths = c(5,2)) %>%
+     add_header_row(values = c("Safety Margins Based on NOAEL from Pivotal Toxicology Studies"), colwidths = c(7)) %>%
+     theme_box()
+    #fontsize(size = 12, part = "all")
     plotData_tab
     
     
@@ -849,12 +913,21 @@ print("559")
   
   output$table_03_flex <- renderUI({
     table_03_fun() %>% 
+      flextable::autofit(add_w = 0.5) %>% 
+      fontsize(size = 16, part = "all") %>% 
       htmltools_value()
     
   })
   
+  table_03_down <- reactive({
+    table_03_fun() %>% 
+      
+      #flextable::autofit() %>% 
+      fit_to_width( max_width = 7) %>% 
+      fontsize(size = 12, part = "all")
+  })
   
-  observeEvent(table_03_fun(), {save_as_docx(table_03_fun(), path = "table_03.docx")})
+  observeEvent(table_03_down(), {save_as_docx(table_03_down(), path = "table_03.docx")})
   
   
   
@@ -871,13 +944,44 @@ print("559")
   
   
   
+  ## download all table 
   
   
+  
+  download_all <- reactive({
+    doc <- read_docx("table_01.docx")
+    doc_02 <- body_add_par(doc,"   ") %>% 
+      body_add_flextable( table_02_down()) %>%
+      body_add_par("   ") %>% 
+      body_add_flextable(table_03_down()) %>% 
+      body_add_par("   ")
+      
+    doc_02
+  })
+  
+ observeEvent(download_all(), {print(download_all() , target = "table_all.docx")})
+  
+  
+  
+  output$down_all <- downloadHandler(
+    filename = function() {
+      paste("table_all", ".docx")
+    },
+    content = function(file) {
+      file.copy("table_all.docx", file)
+      
+      
+    }
+  )
+  
+  
+  
+ #### plotheight ----
 
   plotHeight <- function() {
     plotData <- calculateSM()
     nStudies <- length(unique(plotData$Study))
-    plotHeight <- as.numeric(200*nStudies)
+    plotHeight <- as.numeric(250*nStudies)
   }
   
 
@@ -1237,7 +1341,13 @@ ui <- dashboardPage(
                h4("Safety Margins Based on NOAEL from Pivotal Toxicology Studies"),
                uiOutput('table_03_flex'),
                downloadButton('down_03', 'Download')
+      ),
+      
+      tabPanel("Table_All",
+               downloadButton('down_all', 'Download_All')
       )
+      
+      
       
       
      
