@@ -507,7 +507,7 @@ server <- function(input,output,session) {
   
   # Create PlotData (changed) -----
   
-  print("510")
+
   
  getPlotData <- reactive({
   Data <- getData()
@@ -556,7 +556,7 @@ server <- function(input,output,session) {
   
 })
   
-print("559")
+
   
   output$humanDosing <- renderUI({
     req(input$clinDosing)
@@ -809,8 +809,8 @@ print("559")
   table_01_down <- reactive({
     table_01_fun() %>% 
       
-      #flextable::autofit() %>% 
-      fit_to_width( max_width = 7) %>% 
+      flextable::autofit() %>% 
+      #fit_to_width( max_width = 10,inc = 2L,  max_iter = 40) %>% 
       fontsize(size = 12, part = "all")
   })
   
@@ -864,8 +864,8 @@ print("559")
   table_02_down <- reactive({
     table_02_fun() %>% 
       
-      #flextable::autofit() %>% 
-      fit_to_width( max_width = 7) %>% 
+      flextable::autofit() %>% 
+      #fit_to_width( max_width = 10) %>% 
       fontsize(size = 12, part = "all")
   })
   
@@ -923,7 +923,7 @@ print("559")
     table_03_fun() %>% 
       
       #flextable::autofit() %>% 
-      fit_to_width( max_width = 7) %>% 
+      fit_to_width( max_width = 10, max_iter = 40) %>% 
       fontsize(size = 12, part = "all")
   })
   
@@ -949,12 +949,16 @@ print("559")
   
   
   download_all <- reactive({
-    doc <- read_docx("table_01.docx")
-    doc_02 <- body_add_par(doc,"   ") %>% 
+    doc <- read_docx()
+    doc_02 <-  body_add_flextable(doc, table_01_down()) %>% 
+      body_add_par("   ") %>% 
+      body_add_par("   ") %>% 
+      body_add_par("   ") %>%
       body_add_flextable( table_02_down()) %>%
       body_add_par("   ") %>% 
-      body_add_flextable(table_03_down()) %>% 
-      body_add_par("   ")
+      body_add_par("   ") %>% 
+      body_add_par("   ") %>%
+      body_add_flextable(table_03_down())
       
     doc_02
   })
