@@ -36,10 +36,16 @@ library(magrittr)
 
 ## added by Yousuf
 
+
+# apply roundSigigs funciton to plotData_p$SM 
+# remove findings string from hovertext in findings figure
+
 ### need to add or change in 3rd table of template
 # correct the HED calculation
 # add starting Dose and MHRD 
 # add 
+
+# 
 
 
 '%ni%' <- Negate('%in%')
@@ -141,6 +147,28 @@ speciesConversion <- c(6.2,1.8,3.1,3.1)
 names(speciesConversion) <- c('Rat','Dog','Monkey','Rabbit')
 
 clinDosingOptions <- c('Start Dose','MRHD','Custom Dose')
+
+
+## significant figure
+
+sigfigs <- function(x){
+  orig_scipen <- getOption("scipen")
+  options(scipen = 999)
+  on.exit(options(scipen = orig_scipen))
+  
+  x <- as.character(x)
+  x <- sub("\\.", "", x)
+  x <- gsub("(^0+|0+$)", "", x)
+  nchar(x)
+}
+
+roundSigfigs <- function(x,N=2) {
+  roundNumber <- round(x,digits=0)
+  if (sigfigs(roundNumber)<=N) {
+    roundNumber <- signif(x,digits=N)
+  }
+  return(roundNumber)
+}
 
 # Server function started here (selectData) ----
 
@@ -511,8 +539,8 @@ server <- function(input,output,session) {
   
  getPlotData <- reactive({
   Data <- getData()
-  plotData <- data.frame(matrix(ncol = 14 ))
-  column_names <- c("Study", "Species", "Months", "Dose", 
+  plotData <- data.frame(matrix(ncol = 15 ))
+  column_names <- c("Study", "Species", "Months", "Dose_num", "Dose", 
                     "NOAEL", "Cmax", "AUC", "Findings",
                     "Reversibility", "Severity", "Value", "Value_order", "SM", "HED_value")
   colnames(plotData) <- column_names
@@ -529,6 +557,7 @@ server <- function(input,output,session) {
           plotData[count, "Study"] <- Study
           plotData[count, "Species"] <- studyData[["Species"]]
           plotData[count, "Months"] <- studyData[["Duration"]]
+          plotData[count, "Dose_num"] <- names(studyData[["Doses"]][j])
           plotData[count, "Dose"] <- studyData[["Doses"]][[paste0("Dose", j)]][["Dose"]]
           plotData[count, "NOAEL"] <- studyData[["Doses"]][[paste0("Dose",j)]][["NOAEL"]]
           plotData[count, "Cmax"] <- studyData[["Doses"]][[paste0("Dose", j)]][["Cmax"]]
@@ -606,7 +635,7 @@ server <- function(input,output,session) {
           HED <- Dose
         }
         plotData[i, "HED_value"]<- round(HED, digits = 2) ##for table 03
-        plotData[i, "SM"] <- round(HED/humanDose, digits = 2)
+        plotData[i, "SM"] <- round(HED/humanDose, 2)
       }
     }
     #plotData <- cbind(plotData,SM, HED_value)
@@ -618,12 +647,14 @@ server <- function(input,output,session) {
   output$table <- renderDT({
     plotData_tab <- calculateSM()
     plotData_tab <- plotData_tab %>% 
-      select(Study, Dose, NOAEL, Cmax, AUC, SM,HED_value, finding_rev, Severity) %>% 
+      select(Study, Dose,Dose_num, NOAEL, Cmax, AUC, SM,HED_value, finding_rev, Severity) %>% 
       pivot_wider(names_from = finding_rev, values_from = Severity, values_fill = list(Severity = "Absent"))
-    plotData_tab <- datatable(plotData_tab, rownames = FALSE, class = "cell-border stripe",
+    plotData_tab <- datatable(plotData_tab, rownames = FALSE,
+                              filter = list(position = "top"),
+                              class = "cell-border stripe",
                               
                               options = list(
-                                scrollY = TRUE,
+                                #scrollY = TRUE,
                                 pageLength = 25,
                                 initComplete = JS(
                                   "function(settings, json) {",
@@ -643,7 +674,7 @@ server <- function(input,output,session) {
     plotData_01 <- plotData_01 %>% 
       select( Study,Findings, Rev, Severity, Dose, SM) %>% 
       group_by(Study, Dose)
-    plotData_01 <- datatable(plotData_01,rownames = FALSE, 
+    plotData_01 <- datatable(plotData_01,rownames = FALSE, filter = list(position = "top", clear = FALSE, plain = TRUE),
                              extensions = list("Buttons" = NULL,
                                                 "ColReorder" = NULL), 
                              class = "cell-border stripe",
@@ -999,6 +1030,9 @@ server <- function(input,output,session) {
       select(Study, Species, Months, Dose, SM, Value, NOAEL, Value_order) %>% 
       group_by(Study, Dose, SM) %>% 
       unique()
+    plotData_p$SM <- lapply(plotData_p$SM, roundSigfigs)
+    plotData_p$SM <- as.numeric(plotData_p$SM)
+      
     
     if (nrow(plotData)>0) {
       plotData$Study <- factor(plotData$Study,levels=rev(input$displayStudies))
@@ -1031,9 +1065,9 @@ server <- function(input,output,session) {
       
       
       p <- ggplot(plotData_p)+
-        geom_tile(aes (x = SM, y = Value_order, fill = NOAEL), 
+        geom_tile(aes (x = SM, y = Value_order, fill = NOAEL, text =paste("SM: ", SM)), 
                   color = "transparent", width = 0.40, height = 0.65)+
-        geom_text(aes(x = SM, y = Value_order, label = paste(Dose, " mg/kg/day")), #DoseLabel changed
+        geom_text(aes(x = SM, y = Value_order, label = paste(Dose, " mg/kg/day"), text = paste("SM:", SM)), #DoseLabel changed
                   color = "white", fontface = "bold")+
         scale_x_log10(limits = c(min(plotData_p$SM/2), max(plotData_p$SM*2)),sec.axis = dup_axis())+
         scale_fill_manual(values = color_NOAEL)+
@@ -1055,7 +1089,7 @@ server <- function(input,output,session) {
         geom_col(aes(x= Findings, y = Value, fill = Severity, group = Dose),
                  position = position_stack(reverse = TRUE),
                  color = 'transparent')+
-        geom_text(aes(x = Findings, y = Value, label = Dose, group = Dose),
+        geom_text(aes(x = Findings, y = Value, label = Dose, group = Dose, text = Findings),
                   size = 4,
                   color = 'white',
                   fontface = 'bold',
@@ -1083,8 +1117,8 @@ server <- function(input,output,session) {
       
       #ggplotly(p, tooltip = "x")
       
-      p <- ggplotly(p, tooltip = "x", height = plotHeight())
-      q <- ggplotly(q, tooltip = "x",  height = plotHeight())
+      p <- ggplotly(p, tooltip = c("text","text"), height = plotHeight())
+      q <- ggplotly(q, tooltip = "text",  height = plotHeight()) #show warning though
       
       subplot(p, q, nrows = 1, widths = c(0.7, 0.3), titleX = TRUE, titleY = TRUE) %>% 
         layout(title= "Summary of Toxicology Studies",
