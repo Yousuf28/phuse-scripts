@@ -669,71 +669,161 @@ server <- function(input,output,session) {
   # options = list(autoWidth = TRUE,
   #                scrollX = TRUE,
   
-  output$table_01 <- renderDT({
-    plotData_01 <- calculateSM()
-    plotData_01 <- plotData_01 %>% 
-      select( Study,Findings, Rev, Severity, Dose, SM) %>% 
-      group_by(Study, Dose)
-    plotData_01 <- datatable(plotData_01,rownames = FALSE, filter = list(position = "top", clear = FALSE, plain = TRUE),
-                             extensions = list("Buttons" = NULL,
-                                                "ColReorder" = NULL), 
-                             class = "cell-border stripe",
-                             #caption = "Nonclinical Findings of Potential Clinical Relevance",
-                             caption = htmltools::tags$caption(
-                               style = "caption-side: top; text-align: center; font-size: 20px; color: black",
-                               "Table :", htmltools::strong("Nonclinical Findings of Potential Clinical Relevance")
-                             ),
-                             options = list(
-                               
-                               #autoWidth = TRUE,
-                                            #columnDefs = list(list(width = "150px", targets = "_all")),
-                                            dom = "lfrtipB",
-                                            buttons = c("csv", "excel", "copy", "print"),
-                                            colReorder = TRUE,
-                                            pageLength = 25,
-                                            scrollY = TRUE,
-                                            initComplete = JS(
-                                              "function(settings, json) {",
-                                              "$(this.api().table().header()).css({'background-color': '#000', 'color': '#fff'});",
-                                              "}"),
-                             
-                                            rowsGroup = list(0,1,2,3))) %>% 
-      formatStyle(columns = colnames(plotData_01), `font-size` = "18px")
-    path <- "yousuf" # folder containing dataTables.rowsGroup.js
-    dep <- htmltools::htmlDependency(
-      "RowsGroup", "2.0.0", 
-      path, script = "dataTables.rowsGroup.js")
-    plotData_01$dependencies <- c(plotData_01$dependencies, list(dep))
-    plotData_01
-  })
+  # output$table_01 <- renderDT({
+  #   plotData_01 <- calculateSM()
+  #   plotData_01 <- plotData_01 %>% 
+  #     select( Study,Findings, Rev, Severity, Dose, SM) %>% 
+  #     group_by(Study, Dose)
+  #   plotData_01 <- datatable(plotData_01,rownames = FALSE, filter = list(position = "top", clear = FALSE, plain = TRUE),
+  #                            extensions = list("Buttons" = NULL,
+  #                                               "ColReorder" = NULL), 
+  #                            class = "cell-border stripe",
+  #                            #caption = "Nonclinical Findings of Potential Clinical Relevance",
+  #                            caption = htmltools::tags$caption(
+  #                              style = "caption-side: top; text-align: center; font-size: 20px; color: black",
+  #                              "Table :", htmltools::strong("Nonclinical Findings of Potential Clinical Relevance")
+  #                            ),
+  #                            options = list(
+  #                              
+  #                              #autoWidth = TRUE,
+  #                                           #columnDefs = list(list(width = "150px", targets = "_all")),
+  #                                           dom = "lfrtipB",
+  #                                           buttons = c("csv", "excel", "copy", "print"),
+  #                                           colReorder = TRUE,
+  #                                           pageLength = 25,
+  #                                           scrollY = TRUE,
+  #                                           initComplete = JS(
+  #                                             "function(settings, json) {",
+  #                                             "$(this.api().table().header()).css({'background-color': '#000', 'color': '#fff'});",
+  #                                             "}"),
+  #                            
+  #                                           rowsGroup = list(0,1,2,3))) %>% 
+  #     formatStyle(columns = colnames(plotData_01), `font-size` = "18px")
+  #   path <- "yousuf" # folder containing dataTables.rowsGroup.js
+  #   dep <- htmltools::htmlDependency(
+  #     "RowsGroup", "2.0.0", 
+  #     path, script = "dataTables.rowsGroup.js")
+  #   plotData_01$dependencies <- c(plotData_01$dependencies, list(dep))
+  #   plotData_01
+  # })
+  # 
   
+  ## {{{{{{{{{{{{{{{}}}}}}}}}}}}}}} -----
   
-  
-  output$table_02 <- renderDT({
+  dt_01 <- reactive({
+    
     plotData_tab <- calculateSM()
     plotData_tab <- plotData_tab %>% 
-    select( Findings,Rev, Study, Dose, SM) %>% 
-      group_by(Findings, Dose)
+      select( Findings,Rev, Study, Dose, SM, Severity) %>%
       
-    plotData_tab <- datatable(plotData_tab, rownames = FALSE, class = "cell-border stripe",
-                              
+      filter(Severity != "Absent") %>% 
+      select(-Severity) %>% 
+      arrange(Findings, Rev)
+    plotData_tab
+ 
+  })
+  
+  output$table_01 <- renderDT({
+    plotData_tab <- dt_01()
+  
+    plotData_tab <- datatable(plotData_tab, rownames = FALSE,
+                              class = "cell-border stripe",
+                              filter = list(position = 'top'),
+                              extensions = list("Buttons" = NULL,
+                                                "ColReorder" = NULL),
+
                               options = list(
+                                dom = "lfrtipB",
+                                buttons = c("csv", "excel", "copy", "print"),
+                                colReorder = TRUE,
                                 scrollY = TRUE,
                                 pageLength = 25,
                                 initComplete = JS(
                                   "function(settings, json) {",
                                   "$(this.api().table().header()).css({'background-color': '#000', 'color': '#fff'});",
                                   "}"),
-                                
-                                rowsGroup = list(0,1,2))) %>% 
+
+                                rowsGroup = list(0,1,2))) %>%
       formatStyle(columns = colnames(plotData_tab), `font-size` = "18px")
     path <- "yousuf" # folder containing dataTables.rowsGroup.js
     dep <- htmltools::htmlDependency(
-      "RowsGroup", "2.0.0", 
+      "RowsGroup", "2.0.0",
       path, script = "dataTables.rowsGroup.js")
     plotData_tab$dependencies <- c(plotData_tab$dependencies, list(dep))
     plotData_tab
   })
+  
+  
+  filtered_tab_01 <- reactive({
+    req(input$table_01_rows_all)
+    data <- dt_01()
+    data[input$table_01_rows_all, ]
+
+  })
+    
+    
+    
+  dt_to_flex_01 <- reactive({
+    plotData_tab <- filtered_tab_01()
+
+    plotData_tab <- plotData_tab %>%
+
+      #select( Findings,Rev, Study, Dose, SM) %>%
+      #group_by(Findings, Rev, Study) %>%
+      dplyr::arrange(Findings, Rev, Study) %>%
+      flextable() %>%
+      merge_v(j = ~ Findings + Rev + Study) %>%
+
+      #flextable::autofit(add_w = 1) %>%
+      add_header_row(values = c("Nonclinical Findings of Potential Clinical Relevance"), colwidths = c(5)) %>%
+      theme_box()
+    #fontsize(size = 18, part = "all") %>%
+    plotData_tab
+
+  })
+  
+  
+  
+  # output$table_01 <- renderUI({
+  #   table_01_fun() %>% 
+  #     flextable::autofit(add_w = 1) %>% 
+  #     fontsize(size = 18, part = "all") %>% 
+  #     htmltools_value()
+  #   
+  # })
+  
+  # table_01_down <- reactive({
+  #   dt_to_flex_01() %>% 
+  #     
+  #     flextable::autofit() %>% 
+  #     #fit_to_width( max_width = 10,inc = 2L,  max_iter = 40) %>% 
+  #     fontsize(size = 12, part = "all")
+  # })
+  
+  ## download
+  
+  observeEvent(dt_to_flex_01(), {save_as_docx(dt_to_flex_01(), path = "table_01.docx")})
+
+
+
+  output$down_01_doc <- downloadHandler(
+    filename = function() {
+      paste("table_01", ".docx")
+    },
+    content = function(file) {
+      file.copy("table_01.docx", file)
+
+
+    }
+  )
+  
+  
+  
+  
+  
+  
+  
+  
   
   
   ## from template 02 ----
@@ -812,53 +902,53 @@ server <- function(input,output,session) {
   
   ### flextable for (table 01) ----
   
-  table_01_fun <- reactive({
-    plotData_tab <- calculateSM()
-    plotData_tab <- plotData_tab %>% 
-      select( Findings,Rev, Study, Dose, SM) %>% 
-      #group_by(Findings, Rev, Study) %>% 
-      dplyr::arrange(Findings, Rev, Study) %>% 
-      flextable() %>% 
-      merge_v(j = ~ Findings + Rev + Study) %>% 
-      
-      #flextable::autofit(add_w = 1) %>% 
-      add_header_row(values = c("Nonclinical Findings of Potential Clinical Relevance"), colwidths = c(5)) %>% 
-      theme_box()
-      #fontsize(size = 18, part = "all") %>% 
-    plotData_tab
-    
-  })
-  
-  output$table_01_flex <- renderUI({
-    table_01_fun() %>% 
-      flextable::autofit(add_w = 1) %>% 
-      fontsize(size = 18, part = "all") %>% 
-      htmltools_value()
-    
-  })
-  
-  table_01_down <- reactive({
-    table_01_fun() %>% 
-      
-      flextable::autofit() %>% 
-      #fit_to_width( max_width = 10,inc = 2L,  max_iter = 40) %>% 
-      fontsize(size = 12, part = "all")
-  })
-  
-  observeEvent(table_01_down(), {save_as_docx(table_01_down(), path = "table_01.docx")})
-  
-  
-  
-  output$down_01 <- downloadHandler(
-    filename = function() {
-      paste("table_01", ".docx")
-    },
-    content = function(file) {
-      file.copy("table_01.docx", file)
-      
-      
-    }
-  )
+  # table_01_fun <- reactive({
+  #   plotData_tab <- calculateSM()
+  #   plotData_tab <- plotData_tab %>% 
+  #     select( Findings,Rev, Study, Dose, SM) %>% 
+  #     #group_by(Findings, Rev, Study) %>% 
+  #     dplyr::arrange(Findings, Rev, Study) %>% 
+  #     flextable() %>% 
+  #     merge_v(j = ~ Findings + Rev + Study) %>% 
+  #     
+  #     #flextable::autofit(add_w = 1) %>% 
+  #     add_header_row(values = c("Nonclinical Findings of Potential Clinical Relevance"), colwidths = c(5)) %>% 
+  #     theme_box()
+  #     #fontsize(size = 18, part = "all") %>% 
+  #   plotData_tab
+  #   
+  # })
+  # 
+  # output$table_01_flex <- renderUI({
+  #   table_01_fun() %>% 
+  #     flextable::autofit(add_w = 1) %>% 
+  #     fontsize(size = 18, part = "all") %>% 
+  #     htmltools_value()
+  #   
+  # })
+  # 
+  # table_01_down <- reactive({
+  #   table_01_fun() %>% 
+  #     
+  #     flextable::autofit() %>% 
+  #     #fit_to_width( max_width = 10,inc = 2L,  max_iter = 40) %>% 
+  #     fontsize(size = 12, part = "all")
+  # })
+  # 
+  # observeEvent(table_01_down(), {save_as_docx(table_01_down(), path = "table_01.docx")})
+  # 
+  # 
+  # 
+  # output$down_01 <- downloadHandler(
+  #   filename = function() {
+  #     paste("table_01", ".docx")
+  #   },
+  #   content = function(file) {
+  #     file.copy("table_01.docx", file)
+  #     
+  #     
+  #   }
+  # )
   
   
   
@@ -866,112 +956,112 @@ server <- function(input,output,session) {
   
   #### flextable 02
   
-  table_02_fun <- reactive({
-    plotData_tab <- calculateSM()
-    plotData_tab <- plotData_tab %>% 
-      dplyr::select(Study, Dose, NOAEL, Cmax, AUC, Findings) %>% 
-      filter(NOAEL == TRUE) %>% 
-      dplyr::select(-NOAEL) %>% 
-      #group_by(Findings, Rev, Study) %>% 
-      dplyr::arrange(Study, Dose) %>% 
-      flextable() %>% 
-      merge_v(j = ~ Study + Dose + Cmax+ AUC) %>% 
-      #fontsize(size = 18, part = "all") %>% 
-      #flextable::autofit(add_w = 1) %>% 
-      theme_box()
-    plotData_tab
-    
-  })
-  
-  
-  output$table_02_flex <- renderUI({
-    table_02_fun() %>% 
-      flextable::autofit(add_w = 1) %>% 
-      fontsize(size = 18, part = "all") %>% 
-      htmltools_value()
-    
-  })
-  
-  table_02_down <- reactive({
-    table_02_fun() %>% 
-      
-      flextable::autofit() %>% 
-      #fit_to_width( max_width = 10) %>% 
-      fontsize(size = 12, part = "all")
-  })
-  
-  observeEvent(table_02_down(), {save_as_docx(table_02_down(), path = "table_02.docx")})
-  
-  
-  
-  output$down_02 <- downloadHandler(
-    filename = function() {
-      paste("table_02", ".docx")
-    },
-    content = function(file) {
-      file.copy("table_02.docx", file)
-      
-      
-    }
-  )
-  
+  # table_02_fun <- reactive({
+  #   plotData_tab <- calculateSM()
+  #   plotData_tab <- plotData_tab %>% 
+  #     dplyr::select(Study, Dose, NOAEL, Cmax, AUC, Findings) %>% 
+  #     filter(NOAEL == TRUE) %>% 
+  #     dplyr::select(-NOAEL) %>% 
+  #     #group_by(Findings, Rev, Study) %>% 
+  #     dplyr::arrange(Study, Dose) %>% 
+  #     flextable() %>% 
+  #     merge_v(j = ~ Study + Dose + Cmax+ AUC) %>% 
+  #     #fontsize(size = 18, part = "all") %>% 
+  #     #flextable::autofit(add_w = 1) %>% 
+  #     theme_box()
+  #   plotData_tab
+  #   
+  # })
+  # 
+  # 
+  # output$table_02_flex <- renderUI({
+  #   table_02_fun() %>% 
+  #     flextable::autofit(add_w = 1) %>% 
+  #     fontsize(size = 18, part = "all") %>% 
+  #     htmltools_value()
+  #   
+  # })
+  # 
+  # table_02_down <- reactive({
+  #   table_02_fun() %>% 
+  #     
+  #     flextable::autofit() %>% 
+  #     #fit_to_width( max_width = 10) %>% 
+  #     fontsize(size = 12, part = "all")
+  # })
+  # 
+  # observeEvent(table_02_down(), {save_as_docx(table_02_down(), path = "table_02.docx")})
+  # 
+  # 
+  # 
+  # output$down_02 <- downloadHandler(
+  #   filename = function() {
+  #     paste("table_02", ".docx")
+  #   },
+  #   content = function(file) {
+  #     file.copy("table_02.docx", file)
+  #     
+  #     
+  #   }
+  # )
+  # 
   
   
   
  #### flextable 03 -----
   
   #table 03 
-  table_03_fun <- reactive({
-    plotData_tab <- calculateSM()
-    plotData_tab <- plotData_tab %>%
-      select( Study,NOAEL, Dose, HED_value, Cmax, AUC ) %>%
-      unique() %>%
-      filter(NOAEL == TRUE) %>%
-      select(-NOAEL) %>%
-      dplyr::rename( NOAEL = Dose, HED = HED_value) %>%
-      dplyr::mutate('Starting Dose' = NA, MRHD = NA) %>%
-      dplyr::arrange(Study, NOAEL) %>% 
-      flextable() %>%
-    #flextable::autofit() %>%
-     add_header_row(values = c("Nonclinical", "Clinical Safety Margins"), colwidths = c(5,2)) %>%
-     add_header_row(values = c("Safety Margins Based on NOAEL from Pivotal Toxicology Studies"), colwidths = c(7)) %>%
-     theme_box()
-    #fontsize(size = 12, part = "all")
-    plotData_tab
-    
-    
-  })
-  
-  output$table_03_flex <- renderUI({
-    table_03_fun() %>% 
-      flextable::autofit(add_w = 0.5) %>% 
-      fontsize(size = 16, part = "all") %>% 
-      htmltools_value()
-    
-  })
-  
-  table_03_down <- reactive({
-    table_03_fun() %>% 
-      
-      #flextable::autofit() %>% 
-      fit_to_width( max_width = 10, max_iter = 40) %>% 
-      fontsize(size = 12, part = "all")
-  })
-  
-  observeEvent(table_03_down(), {save_as_docx(table_03_down(), path = "table_03.docx")})
-  
-  
-  
-  output$down_03 <- downloadHandler(
-    filename = function() {
-      paste("table_03", ".docx")
-    },
-    content = function(file) {
-      file.copy("table_03.docx", file)
-      
-      
-    }
-  )
+  # table_03_fun <- reactive({
+  #   plotData_tab <- calculateSM()
+  #   plotData_tab <- plotData_tab %>%
+  #     select( Study,NOAEL, Dose, HED_value, Cmax, AUC ) %>%
+  #     unique() %>%
+  #     filter(NOAEL == TRUE) %>%
+  #     select(-NOAEL) %>%
+  #     dplyr::rename( NOAEL = Dose, HED = HED_value) %>%
+  #     dplyr::mutate('Starting Dose' = NA, MRHD = NA) %>%
+  #     dplyr::arrange(Study, NOAEL) %>% 
+  #     flextable() %>%
+  #   #flextable::autofit() %>%
+  #    add_header_row(values = c("Nonclinical", "Clinical Safety Margins"), colwidths = c(5,2)) %>%
+  #    add_header_row(values = c("Safety Margins Based on NOAEL from Pivotal Toxicology Studies"), colwidths = c(7)) %>%
+  #    theme_box()
+  #   #fontsize(size = 12, part = "all")
+  #   plotData_tab
+  #   
+  #   
+  # })
+  # 
+  # output$table_03_flex <- renderUI({
+  #   table_03_fun() %>% 
+  #     flextable::autofit(add_w = 0.5) %>% 
+  #     fontsize(size = 16, part = "all") %>% 
+  #     htmltools_value()
+  #   
+  # })
+  # 
+  # table_03_down <- reactive({
+  #   table_03_fun() %>% 
+  #     
+  #     #flextable::autofit() %>% 
+  #     fit_to_width( max_width = 10, max_iter = 40) %>% 
+  #     fontsize(size = 12, part = "all")
+  # })
+  # 
+  # observeEvent(table_03_down(), {save_as_docx(table_03_down(), path = "table_03.docx")})
+  # 
+  # 
+  # 
+  # output$down_03 <- downloadHandler(
+  #   filename = function() {
+  #     paste("table_03", ".docx")
+  #   },
+  #   content = function(file) {
+  #     file.copy("table_03.docx", file)
+  #     
+  #     
+  #   }
+  # )
   
   
   
@@ -979,37 +1069,37 @@ server <- function(input,output,session) {
   
   
   
-  download_all <- reactive({
-    doc <- read_docx()
-    doc_02 <-  body_add_flextable(doc, table_01_down()) %>% 
-      body_add_par("   ") %>% 
-      body_add_par("   ") %>% 
-      body_add_par("   ") %>%
-      body_add_flextable( table_02_down()) %>%
-      body_add_par("   ") %>% 
-      body_add_par("   ") %>% 
-      body_add_par("   ") %>%
-      body_add_flextable(table_03_down())
-      
-    doc_02
-  })
-  
- observeEvent(download_all(), {print(download_all() , target = "table_all.docx")})
-  
-  
-  
-  output$down_all <- downloadHandler(
-    filename = function() {
-      paste("table_all", ".docx")
-    },
-    content = function(file) {
-      file.copy("table_all.docx", file)
-      
-      
-    }
-  )
-  
-  
+ #  download_all <- reactive({
+ #    doc <- read_docx()
+ #    doc_02 <-  body_add_flextable(doc, table_01_down()) %>% 
+ #      body_add_par("   ") %>% 
+ #      body_add_par("   ") %>% 
+ #      body_add_par("   ") %>%
+ #      body_add_flextable( table_02_down()) %>%
+ #      body_add_par("   ") %>% 
+ #      body_add_par("   ") %>% 
+ #      body_add_par("   ") %>%
+ #      body_add_flextable(table_03_down())
+ #      
+ #    doc_02
+ #  })
+ #  
+ # observeEvent(download_all(), {print(download_all() , target = "table_all.docx")})
+ #  
+ #  
+ #  
+ #  output$down_all <- downloadHandler(
+ #    filename = function() {
+ #      paste("table_all", ".docx")
+ #    },
+ #    content = function(file) {
+ #      file.copy("table_all.docx", file)
+ #      
+ #      
+ #    }
+ #  )
+ #  
+ #  
   
  #### plotheight ----
 
@@ -1351,11 +1441,10 @@ ui <- dashboardPage(
                  
         ),
         
-        tabPanel("Table_01",
-                 DT::dataTableOutput('table_01')
-      ),
-      tabPanel("Table_02",
-               DT::dataTableOutput('table_02')
+      tabPanel("Table_01",
+               DT::dataTableOutput('table_01'),
+               h4("For Downloading in docx file click link below"),
+               downloadButton("down_01_doc", "Docx file download")
       ),
       tabPanel("Table_03",
                DT::dataTableOutput('table_03')
