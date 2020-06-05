@@ -729,14 +729,14 @@ server <- function(input,output,session) {
     plotData_tab <- datatable(plotData_tab, rownames = FALSE,
                               class = "cell-border stripe",
                               filter = list(position = 'top'),
-                              extensions = list("Buttons" = NULL,
-                                                "ColReorder" = NULL),
+                              extensions = list("Buttons" = NULL),
+                                                #"ColReorder" = NULL),
 
                               options = list(
                                 dom = "lfrtipB",
                                 buttons = c("csv", "excel", "copy", "print"),
-                                colReorder = TRUE,
-                                scrollY = TRUE,
+                                #colReorder = TRUE,
+                                #scrollY = TRUE,
                                 pageLength = 25,
                                 initComplete = JS(
                                   "function(settings, json) {",
@@ -1111,12 +1111,29 @@ server <- function(input,output,session) {
   
 
 ## Figure in UI
+  filtered_plot <- reactive({
+    if (input$NOAEL_choices == "ALL") {
+      plot_data <- calculateSM()
+    } else if (input$NOAEL_choices == "NOAEL") {
+        
+        plot_data <- calculateSM()
+        plot_data <- plot_data %>% 
+          dplyr::filter(NOAEL == TRUE)
+ } else {
+   plot_data <- calculateSM()
+   plot_data <- plot_data %>% 
+     dplyr::filter(NOAEL == FALSE)
+    }
+    
+    plot_data
+  })
+  
 
   output$figure <- renderPlotly({
-    plotData <- calculateSM()
+    plotData <- filtered_plot()
     
     ## plotdata for p plot (changed) ----
-    plotData_p <- calculateSM() %>% 
+    plotData_p <- filtered_plot() %>% 
       select(Study, Species, Months, Dose, SM, Value, NOAEL, Value_order) %>% 
       group_by(Study, Dose, SM) %>% 
       unique()
@@ -1189,7 +1206,7 @@ server <- function(input,output,session) {
         facet_grid(Study ~ ., scales = 'free')+
         theme_bw(base_size=12)+
         theme(axis.title.y = element_blank(),
-              strip.text.y = element_blank(),
+              #strip.text.y = element_blank(),
               axis.ticks.y = element_blank(),
               axis.text.y = element_blank(),
               axis.title.x = element_blank(),
@@ -1207,13 +1224,14 @@ server <- function(input,output,session) {
       
       #ggplotly(p, tooltip = "x")
       
-      p <- ggplotly(p, tooltip = c("text","text"), height = plotHeight())
-      q <- ggplotly(q, tooltip = "text",  height = plotHeight()) #show warning though
+      p <- ggplotly(p, tooltip = c("text","text"), height = plotHeight()) %>% 
+        plotly::style(showlegend = FALSE)
+      q <- ggplotly(q, tooltip = "text",  height = plotHeight() ) #show warning though
       
       subplot(p, q, nrows = 1, widths = c(0.7, 0.3), titleX = TRUE, titleY = TRUE) %>% 
         layout(title= "Summary of Toxicology Studies",
                xaxis = list(title = "Safety Margin"), 
-               xaxis2 = list(title = "Findings"))
+               xaxis2 = list(title = ""))
                
       
       
@@ -1432,6 +1450,9 @@ ui <- dashboardPage(
         
         tabPanel('Figure',
                  actionButton('refreshPlot','Refresh Plot'),
+                 br(),
+                 selectInput("NOAEL_choices", "NOAEL", choices = c("ALL", "NOAEL", "ALL but NOAEL"),
+                             selected = "ALL"),
                  br(),
                  plotlyOutput('figure')
         ),
