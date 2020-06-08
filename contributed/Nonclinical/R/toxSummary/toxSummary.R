@@ -1135,7 +1135,7 @@ server <- function(input,output,session) {
     ## plotdata for p plot (changed) ----
     plotData_p <- filtered_plot() %>% 
       select(Study, Species, Months, Dose, SM, Value, NOAEL, Value_order) %>% 
-      group_by(Study, Dose, SM) %>% 
+      #group_by(Study, Dose, SM) %>% 
       unique()
     plotData_p$SM <- lapply(plotData_p$SM, roundSigfigs)
     plotData_p$SM <- as.numeric(plotData_p$SM)
@@ -1143,6 +1143,7 @@ server <- function(input,output,session) {
     
     if (nrow(plotData)>0) {
       plotData$Study <- factor(plotData$Study,levels=rev(input$displayStudies))
+      plotData_p$Study <- factor(plotData_p$Study,levels=rev(input$displayStudies))
       plotData$DoseLabel <- factor(paste(plotData$Dose,'mg/kg/day'),levels=unique(paste(plotData$Dose,'mg/kg/day'))[order(unique(as.numeric(plotData$Dose),decreasing=F))])
       maxFindings <- 1
       for (doseFinding in plotData$doseFindings) {
@@ -1153,6 +1154,9 @@ server <- function(input,output,session) {
       }
       maxFindings <- maxFindings + 1
 
+      
+      
+      
 
       
       plotData$Findings <- as.factor(plotData$Findings)
@@ -1162,7 +1166,7 @@ server <- function(input,output,session) {
                                   levels= c('Absent','Present','Minimal', 'Mild',
                                             'Moderate', 'Marked', 'Severe'), ordered = TRUE)
       
-      color_manual <- c('transparent','black','#feb24c','#fd8d3c','#fc4e2a','#e31a1c','#b10026')
+      color_manual <- c('transparent','grey','#feb24c','#fd8d3c','#fc4e2a','#e31a1c','#b10026')
 
 # order of study need to be fixed
   
