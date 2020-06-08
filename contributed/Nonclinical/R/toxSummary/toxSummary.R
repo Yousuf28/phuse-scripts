@@ -545,6 +545,7 @@ server <- function(input,output,session) {
                     "Reversibility", "Severity", "Value", "Value_order", "SM", "HED_value")
   colnames(plotData) <- column_names
   
+  
   count <- 1
   
   for (Study in names(Data[["Nonclinical Information"]])) {
@@ -581,10 +582,18 @@ server <- function(input,output,session) {
   plotData$finding_rev <- paste0(plotData$Findings,"_", plotData$Rev)
   plotData$find_rev_b <- paste0(plotData$Findings, plotData$Reversibility)
   plotData <- plotData[which(plotData$Study %in% input$displayStudies),]
+  
+  plotData$Rev[plotData$Rev == ""] <- "Not Assessed"
+  plotData$Rev[plotData$Rev == "Rev"] <- "Reversible"
+  plotData$Rev[plotData$Rev == "NR"] <- "Not Reversible"
+  plotData$Rev[plotData$Rev == "PR"] <- "Partially Revesible"
+  
+  
   return(plotData)
   
 })
-  
+ 
+   
 
   
   output$humanDosing <- renderUI({
@@ -638,75 +647,16 @@ server <- function(input,output,session) {
         plotData[i, "SM"] <- round(HED/humanDose, 2)
       }
     }
+    
+    
     #plotData <- cbind(plotData,SM, HED_value)
     return(plotData)
   })
 
-## output table (changed) ----
   
-  output$table <- renderDT({
-    plotData_tab <- calculateSM()
-    plotData_tab <- plotData_tab %>% 
-      select(Study, Dose,Dose_num, NOAEL, Cmax, AUC, SM,HED_value, finding_rev, Severity) %>% 
-      pivot_wider(names_from = finding_rev, values_from = Severity, values_fill = list(Severity = "Absent"))
-    plotData_tab <- datatable(plotData_tab, rownames = FALSE,
-                              filter = list(position = "top"),
-                              class = "cell-border stripe",
-                              
-                              options = list(
-                                #scrollY = TRUE,
-                                pageLength = 25,
-                                initComplete = JS(
-                                  "function(settings, json) {",
-                                  "$(this.api().table().header()).css({'background-color': '#000', 'color': '#fff'});",
-                                  "}")
-                              ))
-  })
   
-  ### change path ----
-  
-  # 
-  # options = list(autoWidth = TRUE,
-  #                scrollX = TRUE,
-  
-  # output$table_01 <- renderDT({
-  #   plotData_01 <- calculateSM()
-  #   plotData_01 <- plotData_01 %>% 
-  #     select( Study,Findings, Rev, Severity, Dose, SM) %>% 
-  #     group_by(Study, Dose)
-  #   plotData_01 <- datatable(plotData_01,rownames = FALSE, filter = list(position = "top", clear = FALSE, plain = TRUE),
-  #                            extensions = list("Buttons" = NULL,
-  #                                               "ColReorder" = NULL), 
-  #                            class = "cell-border stripe",
-  #                            #caption = "Nonclinical Findings of Potential Clinical Relevance",
-  #                            caption = htmltools::tags$caption(
-  #                              style = "caption-side: top; text-align: center; font-size: 20px; color: black",
-  #                              "Table :", htmltools::strong("Nonclinical Findings of Potential Clinical Relevance")
-  #                            ),
-  #                            options = list(
-  #                              
-  #                              #autoWidth = TRUE,
-  #                                           #columnDefs = list(list(width = "150px", targets = "_all")),
-  #                                           dom = "lfrtipB",
-  #                                           buttons = c("csv", "excel", "copy", "print"),
-  #                                           colReorder = TRUE,
-  #                                           pageLength = 25,
-  #                                           scrollY = TRUE,
-  #                                           initComplete = JS(
-  #                                             "function(settings, json) {",
-  #                                             "$(this.api().table().header()).css({'background-color': '#000', 'color': '#fff'});",
-  #                                             "}"),
-  #                            
-  #                                           rowsGroup = list(0,1,2,3))) %>% 
-  #     formatStyle(columns = colnames(plotData_01), `font-size` = "18px")
-  #   path <- "yousuf" # folder containing dataTables.rowsGroup.js
-  #   dep <- htmltools::htmlDependency(
-  #     "RowsGroup", "2.0.0", 
-  #     path, script = "dataTables.rowsGroup.js")
-  #   plotData_01$dependencies <- c(plotData_01$dependencies, list(dep))
-  #   plotData_01
-  # })
-  # 
+  #observeEvent(calculateSM(), {print(str(calculateSM()))})
+  ### output table ----
   
   ## {{{{{{{{{{{{{{{}}}}}}}}}}}}}}} -----
   
@@ -714,14 +664,26 @@ server <- function(input,output,session) {
     
     plotData_tab <- calculateSM()
     plotData_tab <- plotData_tab %>% 
+      mutate(Findings = as.factor(Findings),
+             Rev = as.factor(Rev),
+             Study = as.factor(Study),
+             Dose = as.numeric(Dose),
+             SM = as.numeric(SM),
+             Severity = as.factor(Severity))
+    
+    plotData_tab <- plotData_tab %>% 
       select( Findings,Rev, Study, Dose, SM, Severity) %>%
-      
       filter(Severity != "Absent") %>% 
       select(-Severity) %>% 
-      arrange(Findings, Rev)
+      arrange(Findings, Rev) %>% 
+      rename(Reversibility = Rev,
+             "Clinical Safety Margin" = SM)
     plotData_tab
  
   })
+  
+
+
   
   output$table_01 <- renderDT({
     plotData_tab <- dt_01()
@@ -760,9 +722,9 @@ server <- function(input,output,session) {
     data[input$table_01_rows_all, ]
 
   })
-    
-    
-    
+
+
+
   dt_to_flex_01 <- reactive({
     plotData_tab <- filtered_tab_01()
 
@@ -770,38 +732,20 @@ server <- function(input,output,session) {
 
       #select( Findings,Rev, Study, Dose, SM) %>%
       #group_by(Findings, Rev, Study) %>%
-      dplyr::arrange(Findings, Rev, Study) %>%
+      dplyr::arrange(Findings, Reversibility, Study) %>%
       flextable() %>%
-      merge_v(j = ~ Findings + Rev + Study) %>%
+      merge_v(j = ~ Findings + Reversibility + Study) %>%
 
-      #flextable::autofit(add_w = 1) %>%
+      flextable::autofit() %>%
       add_header_row(values = c("Nonclinical Findings of Potential Clinical Relevance"), colwidths = c(5)) %>%
       theme_box()
     #fontsize(size = 18, part = "all") %>%
     plotData_tab
 
   })
-  
-  
-  
-  # output$table_01 <- renderUI({
-  #   table_01_fun() %>% 
-  #     flextable::autofit(add_w = 1) %>% 
-  #     fontsize(size = 18, part = "all") %>% 
-  #     htmltools_value()
-  #   
-  # })
-  
-  # table_01_down <- reactive({
-  #   dt_to_flex_01() %>% 
-  #     
-  #     flextable::autofit() %>% 
-  #     #fit_to_width( max_width = 10,inc = 2L,  max_iter = 40) %>% 
-  #     fontsize(size = 12, part = "all")
-  # })
-  
-  ## download
-  
+
+
+
   observeEvent(dt_to_flex_01(), {save_as_docx(dt_to_flex_01(), path = "table_01.docx")})
 
 
@@ -816,24 +760,29 @@ server <- function(input,output,session) {
 
     }
   )
+
+  #### table 02
   
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  ## from template 02 ----
-  output$table_03 <- renderDT({
+  dt_02 <- reactive({
+    
     plotData_tab <- calculateSM()
     plotData_tab <- plotData_tab %>% 
-      select(Study, Dose, NOAEL, Cmax, AUC, SM, Findings) %>% 
-      filter(NOAEL == TRUE)
-      
+      dplyr::select(Study, Dose, NOAEL, Cmax, AUC, SM, Findings) %>% 
+      mutate(Findings = as.factor(Findings),
+             Study = as.factor(Study)) %>% 
+             filter(NOAEL == TRUE) %>% 
+             dplyr::select(-NOAEL) %>%
+          #group_by(Findings, Rev, Study) %>%
+             dplyr::arrange(Study, Dose)
+    plotData_tab
+    
+  })
+  
+
+  output$table_02 <- renderDT({
+    plotData_tab <- dt_02()
     plotData_tab <- datatable(plotData_tab, rownames = FALSE, class = "cell-border stripe",
+                              filter = list(position = 'top'),
                               
                               options = list(
                                 scrollY = TRUE,
@@ -855,25 +804,73 @@ server <- function(input,output,session) {
   })
   
   
+  
+  filtered_tab_02 <- reactive({
+    req(input$table_02_rows_all)
+    data <- dt_02()
+    data[input$table_02_rows_all, ]
+    
+  })
+  
+  
+  dt_to_flex_02 <- reactive({
+    plotData_tab <- filtered_tab_02()
+    plotData_tab <- plotData_tab %>%
+      flextable() %>% 
+          merge_v(j = ~ Study + Dose + Cmax+ AUC +SM) %>%
+          flextable::autofit() %>%
+          theme_box()
+    plotData_tab
+    
+  })
+  
+  
+  
+  observeEvent(dt_to_flex_02(), {save_as_docx(dt_to_flex_02(), path = "table_02.docx")})
+  
+  
+  
+  output$down_02_doc <- downloadHandler(
+    filename = function() {
+      paste("table_02", ".docx")
+    },
+    content = function(file) {
+      file.copy("table_02.docx", file)
+      
+      
+    }
+  )
+  
+  
+  
+  
+  
   ## table 04 ----
   
-  output$table_04 <- renderDT({
-    plotData_04 <- calculateSM()
-    plotData_04 <- plotData_04 %>% 
+  dt_03 <- reactive({
+    
+    plotData_03 <- calculateSM()
+    plotData_03 <- plotData_03 %>% 
       select( Study,NOAEL, Dose, SM , HED_value, Cmax, AUC ) %>% 
+      mutate(Study = as.factor(Study)) %>% 
       unique() %>% 
       filter(NOAEL == TRUE) %>% 
       select(-NOAEL) %>% 
       dplyr::rename( HED = HED_value, NOAEL = Dose) %>% 
       dplyr::mutate('Starting Dose' = NA, MRHD = NA) # have to change
+    plotData_03
     
-    
-      
-    plotData_04 <- datatable(plotData_04,rownames = FALSE, 
+  })
+  
+  output$table_03 <- renderDT({
+    plotData_03 <- dt_03()
+    plotData_03 <- datatable(plotData_03,rownames = FALSE, 
                              extensions = list("Buttons" = NULL,
                                                "ColReorder" = NULL), 
+                          
+                             
                              class = "cell-border stripe",
-                           
+                             filter = list(position = 'top'),
                              caption = htmltools::tags$caption(
                                style = "caption-side: top; text-align: center; font-size: 20px; color: black",
                                "Table :", htmltools::strong("Safety Margins Based on NOAEL from Pivotal Toxicology Studies")
@@ -891,12 +888,83 @@ server <- function(input,output,session) {
                                  "function(settings, json) {",
                                  "$(this.api().table().header()).css({'background-color': '#000', 'color': '#fff'});",
                                  "}"))) %>% 
-      formatStyle(columns = colnames(plotData_04), `font-size` = "18px")
+      formatStyle(columns = colnames(plotData_03), `font-size` = "18px")
 
-    plotData_04
+    plotData_03
   })
   
   
+  filtered_tab_03 <- reactive({
+    req(input$table_03_rows_all)
+    data <- dt_03()
+    data[input$table_03_rows_all, ]
+    
+  })
+  
+  
+  dt_to_flex_03 <- reactive({
+    plotData_tab <- filtered_tab_03() %>% 
+      flextable() %>%
+      add_header_row(values = c("Nonclinical", "Clinical Safety Margins"), colwidths = c(6,2)) %>%
+      add_header_row(values = c("Safety Margins Based on NOAEL from Pivotal Toxicology Studies"), colwidths = c(8)) %>%
+      theme_box()
+    
+    plotData_tab
+    
+    
+  })
+  
+  
+  
+  observeEvent(dt_to_flex_03(), {save_as_docx(dt_to_flex_03(), path = "table_03.docx")})
+  
+  
+  
+  output$down_03_doc <- downloadHandler(
+    filename = function() {
+      paste("table_03", ".docx")
+    },
+    content = function(file) {
+      file.copy("table_03.docx", file)
+      
+      
+    }
+  )
+  
+  
+  ## download all table 
+  
+  
+  
+   download_all <- reactive({
+     doc <- read_docx()
+     doc_02 <-  body_add_flextable(doc, dt_to_flex_01()) %>%
+       body_add_par("   ") %>%
+       body_add_par("   ") %>%
+       body_add_par("   ") %>%
+       body_add_flextable( dt_to_flex_02()) %>%
+       body_add_par("   ") %>%
+       body_add_par("   ") %>%
+       body_add_par("   ") %>%
+       body_add_flextable(dt_to_flex_03())
+
+     doc_02
+   })
+
+  observeEvent(download_all(), {print(download_all() , target = "table_all.docx")})
+
+
+
+   output$down_all <- downloadHandler(
+     filename = function() {
+       paste("table_all", ".docx")
+     },
+     content = function(file) {
+       file.copy("table_all.docx", file)
+
+
+     }
+   )
   
   
   
@@ -1461,48 +1529,28 @@ ui <- dashboardPage(
                  plotlyOutput('figure')
         ),
         
-        tabPanel('Table',
-                 DT::dataTableOutput('table')
-                 
-        ),
-        
       tabPanel("Table_01",
                DT::dataTableOutput('table_01'),
                h4("For Downloading in docx file click link below"),
                downloadButton("down_01_doc", "Docx file download")
       ),
+      tabPanel("Table_02",
+               DT::dataTableOutput('table_02'),
+               h4("For Downloading in docx file click link below"),
+               downloadButton("down_02_doc", "Docx file download")
+               
+               
+      ),
+      
       tabPanel("Table_03",
-               DT::dataTableOutput('table_03')
-      ),
-      
-      tabPanel("Table_04",
-               DT::dataTableOutput('table_04')
-      ),
-      
-      tabPanel("Table_01_flex",
-               uiOutput('table_01_flex'),
-               downloadButton('down_01', 'Download')
-      ),
-      
-      tabPanel("Table_02_flex",
-               uiOutput('table_02_flex'),
-               downloadButton('down_02', 'Download')
-      ),
-      
-      tabPanel("Table_03_flex",
-               h4("Safety Margins Based on NOAEL from Pivotal Toxicology Studies"),
-               uiOutput('table_03_flex'),
-               downloadButton('down_03', 'Download')
+               DT::dataTableOutput('table_03'),
+               h4("For Downloading in docx file click link below"),
+               downloadButton("down_03_doc", "Docx file download")
+               
       ),
       
       tabPanel("Table_All",
-               downloadButton('down_all', 'Download_All')
-      )
-      
-      
-      
-      
-     
+               downloadButton("down_all", "Docx file download"))
   ))))
 
 
