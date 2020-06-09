@@ -581,12 +581,15 @@ server <- function(input,output,session) {
   plotData$Rev <- gsub("\\[|\\]", "", plotData$Reversibility)
   plotData$finding_rev <- paste0(plotData$Findings,"_", plotData$Rev)
   plotData$find_rev_b <- paste0(plotData$Findings, plotData$Reversibility)
-  plotData <- plotData[which(plotData$Study %in% input$displayStudies),]
   
   plotData$Rev[plotData$Rev == ""] <- "Not Assessed"
   plotData$Rev[plotData$Rev == "Rev"] <- "Reversible"
   plotData$Rev[plotData$Rev == "NR"] <- "Not Reversible"
   plotData$Rev[plotData$Rev == "PR"] <- "Partially Revesible"
+  
+  plotData <- plotData[which(plotData$Study %in% input$displayStudies),]
+  
+
   
   
   return(plotData)
@@ -691,14 +694,14 @@ server <- function(input,output,session) {
     plotData_tab <- datatable(plotData_tab, rownames = FALSE,
                               class = "cell-border stripe",
                               filter = list(position = 'top'),
-                              extensions = list("Buttons" = NULL),
-                                                #"ColReorder" = NULL),
+                              extensions = list("Buttons" = NULL,
+                                                "ColReorder" = NULL),
 
                               options = list(
                                 dom = "lfrtipB",
                                 buttons = c("csv", "excel", "copy", "print"),
-                                #colReorder = TRUE,
-                                #scrollY = TRUE,
+                                colReorder = TRUE,
+                                scrollY = TRUE,
                                 pageLength = 25,
                                 initComplete = JS(
                                   "function(settings, json) {",
@@ -967,208 +970,7 @@ server <- function(input,output,session) {
    )
   
   
-  
-  ### flextable for (table 01) ----
-  
-  # table_01_fun <- reactive({
-  #   plotData_tab <- calculateSM()
-  #   plotData_tab <- plotData_tab %>% 
-  #     select( Findings,Rev, Study, Dose, SM) %>% 
-  #     #group_by(Findings, Rev, Study) %>% 
-  #     dplyr::arrange(Findings, Rev, Study) %>% 
-  #     flextable() %>% 
-  #     merge_v(j = ~ Findings + Rev + Study) %>% 
-  #     
-  #     #flextable::autofit(add_w = 1) %>% 
-  #     add_header_row(values = c("Nonclinical Findings of Potential Clinical Relevance"), colwidths = c(5)) %>% 
-  #     theme_box()
-  #     #fontsize(size = 18, part = "all") %>% 
-  #   plotData_tab
-  #   
-  # })
-  # 
-  # output$table_01_flex <- renderUI({
-  #   table_01_fun() %>% 
-  #     flextable::autofit(add_w = 1) %>% 
-  #     fontsize(size = 18, part = "all") %>% 
-  #     htmltools_value()
-  #   
-  # })
-  # 
-  # table_01_down <- reactive({
-  #   table_01_fun() %>% 
-  #     
-  #     flextable::autofit() %>% 
-  #     #fit_to_width( max_width = 10,inc = 2L,  max_iter = 40) %>% 
-  #     fontsize(size = 12, part = "all")
-  # })
-  # 
-  # observeEvent(table_01_down(), {save_as_docx(table_01_down(), path = "table_01.docx")})
-  # 
-  # 
-  # 
-  # output$down_01 <- downloadHandler(
-  #   filename = function() {
-  #     paste("table_01", ".docx")
-  #   },
-  #   content = function(file) {
-  #     file.copy("table_01.docx", file)
-  #     
-  #     
-  #   }
-  # )
-  
-  
-  
-  
-  
-  #### flextable 02
-  
-  # table_02_fun <- reactive({
-  #   plotData_tab <- calculateSM()
-  #   plotData_tab <- plotData_tab %>% 
-  #     dplyr::select(Study, Dose, NOAEL, Cmax, AUC, Findings) %>% 
-  #     filter(NOAEL == TRUE) %>% 
-  #     dplyr::select(-NOAEL) %>% 
-  #     #group_by(Findings, Rev, Study) %>% 
-  #     dplyr::arrange(Study, Dose) %>% 
-  #     flextable() %>% 
-  #     merge_v(j = ~ Study + Dose + Cmax+ AUC) %>% 
-  #     #fontsize(size = 18, part = "all") %>% 
-  #     #flextable::autofit(add_w = 1) %>% 
-  #     theme_box()
-  #   plotData_tab
-  #   
-  # })
-  # 
-  # 
-  # output$table_02_flex <- renderUI({
-  #   table_02_fun() %>% 
-  #     flextable::autofit(add_w = 1) %>% 
-  #     fontsize(size = 18, part = "all") %>% 
-  #     htmltools_value()
-  #   
-  # })
-  # 
-  # table_02_down <- reactive({
-  #   table_02_fun() %>% 
-  #     
-  #     flextable::autofit() %>% 
-  #     #fit_to_width( max_width = 10) %>% 
-  #     fontsize(size = 12, part = "all")
-  # })
-  # 
-  # observeEvent(table_02_down(), {save_as_docx(table_02_down(), path = "table_02.docx")})
-  # 
-  # 
-  # 
-  # output$down_02 <- downloadHandler(
-  #   filename = function() {
-  #     paste("table_02", ".docx")
-  #   },
-  #   content = function(file) {
-  #     file.copy("table_02.docx", file)
-  #     
-  #     
-  #   }
-  # )
-  # 
-  
-  
-  
- #### flextable 03 -----
-  
-  #table 03 
-  # table_03_fun <- reactive({
-  #   plotData_tab <- calculateSM()
-  #   plotData_tab <- plotData_tab %>%
-  #     select( Study,NOAEL, Dose, HED_value, Cmax, AUC ) %>%
-  #     unique() %>%
-  #     filter(NOAEL == TRUE) %>%
-  #     select(-NOAEL) %>%
-  #     dplyr::rename( NOAEL = Dose, HED = HED_value) %>%
-  #     dplyr::mutate('Starting Dose' = NA, MRHD = NA) %>%
-  #     dplyr::arrange(Study, NOAEL) %>% 
-  #     flextable() %>%
-  #   #flextable::autofit() %>%
-  #    add_header_row(values = c("Nonclinical", "Clinical Safety Margins"), colwidths = c(5,2)) %>%
-  #    add_header_row(values = c("Safety Margins Based on NOAEL from Pivotal Toxicology Studies"), colwidths = c(7)) %>%
-  #    theme_box()
-  #   #fontsize(size = 12, part = "all")
-  #   plotData_tab
-  #   
-  #   
-  # })
-  # 
-  # output$table_03_flex <- renderUI({
-  #   table_03_fun() %>% 
-  #     flextable::autofit(add_w = 0.5) %>% 
-  #     fontsize(size = 16, part = "all") %>% 
-  #     htmltools_value()
-  #   
-  # })
-  # 
-  # table_03_down <- reactive({
-  #   table_03_fun() %>% 
-  #     
-  #     #flextable::autofit() %>% 
-  #     fit_to_width( max_width = 10, max_iter = 40) %>% 
-  #     fontsize(size = 12, part = "all")
-  # })
-  # 
-  # observeEvent(table_03_down(), {save_as_docx(table_03_down(), path = "table_03.docx")})
-  # 
-  # 
-  # 
-  # output$down_03 <- downloadHandler(
-  #   filename = function() {
-  #     paste("table_03", ".docx")
-  #   },
-  #   content = function(file) {
-  #     file.copy("table_03.docx", file)
-  #     
-  #     
-  #   }
-  # )
-  
-  
-  
-  ## download all table 
-  
-  
-  
- #  download_all <- reactive({
- #    doc <- read_docx()
- #    doc_02 <-  body_add_flextable(doc, table_01_down()) %>% 
- #      body_add_par("   ") %>% 
- #      body_add_par("   ") %>% 
- #      body_add_par("   ") %>%
- #      body_add_flextable( table_02_down()) %>%
- #      body_add_par("   ") %>% 
- #      body_add_par("   ") %>% 
- #      body_add_par("   ") %>%
- #      body_add_flextable(table_03_down())
- #      
- #    doc_02
- #  })
- #  
- # observeEvent(download_all(), {print(download_all() , target = "table_all.docx")})
- #  
- #  
- #  
- #  output$down_all <- downloadHandler(
- #    filename = function() {
- #      paste("table_all", ".docx")
- #    },
- #    content = function(file) {
- #      file.copy("table_all.docx", file)
- #      
- #      
- #    }
- #  )
- #  
- #  
-  
+ 
  #### plotheight ----
 
   plotHeight <- function() {
@@ -1201,7 +1003,8 @@ server <- function(input,output,session) {
     plotData <- filtered_plot()
     
     ## plotdata for p plot (changed) ----
-    plotData_p <- filtered_plot() %>% 
+    plotData_p <- plotData
+    plotData_p <- plotData_p %>% 
       select(Study, Species, Months, Dose, SM, Value, NOAEL, Value_order) %>% 
       #group_by(Study, Dose, SM) %>% 
       unique()
@@ -1250,7 +1053,7 @@ server <- function(input,output,session) {
                   color = "white", fontface = "bold")+
         scale_x_log10(limits = c(min(plotData_p$SM/2), max(plotData_p$SM*2)),sec.axis = dup_axis())+
         scale_fill_manual(values = color_NOAEL)+
-        facet_nested( Species+ Months ~ .)+
+        facet_grid( Study ~ .)+
         labs( title = "Summary of Toxicology Studies")+
         theme_bw(base_size=12)+
         theme(axis.title.y = element_blank(),
@@ -1260,7 +1063,7 @@ server <- function(input,output,session) {
               panel.grid.minor = element_blank(),
               plot.title = element_text(hjust = 0.5),
               legend.position = "none",
-              strip.text.y = element_text(size=7, color="black", face="plain"),
+              strip.text.y = element_text(size=9, color="black", face="bold"),
               strip.background = element_rect( fill = "white"))
       
       
@@ -1278,7 +1081,7 @@ server <- function(input,output,session) {
         facet_grid(Study ~ ., scales = 'free')+
         theme_bw(base_size=12)+
         theme(axis.title.y = element_blank(),
-              #strip.text.y = element_blank(),
+              strip.text.y = element_blank(),
               axis.ticks.y = element_blank(),
               axis.text.y = element_blank(),
               axis.title.x = element_blank(),
@@ -1304,67 +1107,6 @@ server <- function(input,output,session) {
         layout(title= "Summary of Toxicology Studies",
                xaxis = list(title = "Safety Margin"), 
                xaxis2 = list(title = ""))
-               
-      
-      
-     #  p <- ggplot(plotData_p)+
-     #    geom_label(aes(x = SM, y = Value, label = paste(Dose, " mg/kg/day")),
-     #               color = 'white',
-     #               size = 6,
-     #               fill = ifelse(plotData_p$NOAEL == TRUE, "#239B56", "black"),
-     #               label.padding = unit(0.8, "lines"),
-     #               fontface = "bold",
-     #               position = ggstance::position_dodge2v(height = 1, preserve = "total",padding=2))+
-     # 
-     #    scale_x_log10(limits = c(min(plotData_p$SM/2),
-     #                             max(plotData_p$SM*2)), sec.axis = dup_axis())+
-     #    facet_nested( Species+ Months ~ .)+
-     # 
-     #    labs(x = "Safety Margin", title = "Summary of Toxicology Studies")+
-     #    theme_bw(base_size=12)+
-     #    theme(axis.title.y = element_blank(),
-     #          axis.ticks.y= element_blank(),
-     #          axis.text.y = element_blank(),
-     #          panel.grid.major = element_blank(),
-     #          panel.grid.minor = element_blank(),
-     #          plot.title = element_text(hjust = 0.5),
-     #          strip.text.y = element_text(size=11, color="black", face="plain"),
-     #          strip.background = element_rect( fill = "white"))
-     # 
-     #  
-     # # findings plot
-     #  
-     #  q <- ggplot(plotData)+
-     #    geom_col(aes(x= Findings, y = Value, fill = Severity, group = Dose), 
-     #             position = position_stack(reverse = TRUE), 
-     #             color = 'transparent')+  
-     #    geom_text(aes(x = Findings, y = Value, label = Dose, group = Dose),
-     #              size = 5,
-     #              color = 'white',
-     #              fontface = 'bold',
-     #              position = position_stack(vjust = 0.5, reverse = TRUE))+
-     #    scale_y_discrete(position = 'right')+ 
-     #    scale_fill_manual(values = color_manual)+
-     #    
-     #    facet_grid(Study ~ ., scales = 'free')+
-     #    
-     #    theme_bw(base_size=12)+
-     #    theme(axis.title.y = element_blank(),
-     #          #strip.text.y = element_blank(),
-     #          axis.ticks.y = element_blank(),
-     #          axis.text.y = element_blank(),
-     #          axis.title.x = element_blank(), 
-     #          axis.text.x = element_text(angle = 90),
-     #          plot.title = element_text(hjust = 0.5),
-     #          panel.grid.major.y = element_blank(),
-     #          panel.grid.minor.y = element_blank(),
-     #          panel.grid.major.x = element_line(),
-     #          panel.grid.minor.x = element_blank(),
-     #          legend.justification = "top")+
-     #    labs(title = 'Findings' )+
-     #    guides(fill = guide_legend(override.aes = aes(label = "")))
-     #  p + q + plot_layout(ncol=2,widths=c(3,1))
-     #  
       
     }
   })
