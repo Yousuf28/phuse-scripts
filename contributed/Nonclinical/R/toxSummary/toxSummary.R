@@ -661,7 +661,7 @@ server <- function(input,output,session) {
   #observeEvent(calculateSM(), {print(str(calculateSM()))})
   ### output table ----
   
-  ## {{{{{{{{{{{{{{{}}}}}}}}}}}}}}} -----
+ ## {{{{{{{{{{{{{{{}}}}}}}}}}}}}}} -----
   
   dt_01 <- reactive({
     
@@ -680,7 +680,8 @@ server <- function(input,output,session) {
       select(-Severity) %>% 
       arrange(Findings, Rev) %>% 
       rename(Reversibility = Rev,
-             "Clinical Safety Margin" = SM)
+             "Clinical Safety Margin" = SM,
+             "Dose (mg/kg/day)" = Dose)
     plotData_tab
  
   })
@@ -703,6 +704,7 @@ server <- function(input,output,session) {
                                 colReorder = TRUE,
                                 scrollY = TRUE,
                                 pageLength = 25,
+                                columnDefs = list(list(className = "dt-center", targets = "_all")),
                                 initComplete = JS(
                                   "function(settings, json) {",
                                   "$(this.api().table().header()).css({'background-color': '#000', 'color': '#fff'});",
@@ -781,15 +783,21 @@ server <- function(input,output,session) {
     
   })
   
-
+# make column name same as flextable (add unit in DT table)
   output$table_02 <- renderDT({
     plotData_tab <- dt_02()
     plotData_tab <- datatable(plotData_tab, rownames = FALSE, class = "cell-border stripe",
                               filter = list(position = 'top'),
+                              extensions = list("Buttons" = NULL),
+                            
                               
                               options = list(
                                 scrollY = TRUE,
                                 pageLength = 25,
+                                dom = "lfrtipB",
+                                buttons = c("csv", "excel", "copy", "print"),
+                                
+                                columnDefs = list(list(className = "dt-center", targets = "_all")),
                                 initComplete = JS(
                                   "function(settings, json) {",
                                   "$(this.api().table().header()).css({'background-color': '#000', 'color': '#fff'});",
@@ -821,7 +829,12 @@ server <- function(input,output,session) {
     plotData_tab <- plotData_tab %>%
       flextable() %>% 
           merge_v(j = ~ Study + Dose + Cmax+ AUC +SM) %>%
-          flextable::autofit() %>%
+          flextable::autofit() %>% 
+      
+          set_header_labels("Dose" = "Dose (mg/kg/day)",
+                        "Cmax" = "Cmax (ng/ml)",
+                        "AUC" = "AUC (ng*h/ml)",
+                        "SM" = "Safety Margin") %>% 
           theme_box()
     plotData_tab
     
@@ -886,6 +899,8 @@ server <- function(input,output,session) {
                                buttons = c("csv", "excel", "copy", "print"),
                                colReorder = TRUE,
                                pageLength = 10,
+                               columnDefs = list(list(className = "dt-center", targets = "_all")),
+                               
                                scrollY = TRUE,
                                initComplete = JS(
                                  "function(settings, json) {",
@@ -1270,6 +1285,9 @@ ui <- dashboardPage(
                  br(),
                  plotlyOutput('figure')
         ),
+        
+        
+  
         
       tabPanel("Table_01",
                DT::dataTableOutput('table_01'),
