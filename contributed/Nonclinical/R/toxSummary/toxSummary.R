@@ -539,10 +539,10 @@ server <- function(input,output,session) {
   
  getPlotData <- reactive({
   Data <- getData()
-  plotData <- data.frame(matrix(ncol = 15 ))
+  plotData <- data.frame(matrix(ncol = 17 ))
   column_names <- c("Study", "Species", "Months", "Dose_num", "Dose", 
                     "NOAEL", "Cmax", "AUC", "Findings",
-                    "Reversibility", "Severity", "Value", "Value_order", "SM", "HED_value")
+                    "Reversibility", "Severity", "Value", "Value_order", "SM", "HED_value", "SM_start_dose", "SM_MRHD")
   colnames(plotData) <- column_names
   
   
@@ -570,6 +570,9 @@ server <- function(input,output,session) {
           plotData[count, "Value_order"] <- j
           plotData[count, "SM"] <- NA
           plotData[count, "HED_value"] <- NA
+          plotData[count, "SM_start_dose"] <- NA
+          plotData[count, "SM_MRHD"] <- NA
+          
           count <- count+1
           
           
@@ -639,15 +642,36 @@ server <- function(input,output,session) {
         if (input$SMbasis=='HED') {
           humanDose <- Data[['Clinical Information']][[input$humanDosing]][[humanDoseName]]
           HED <- Dose/speciesConversion[[Species]]
+          SM_start <- HED/(Data[["Clinical Information"]][["Start Dose"]][["StartDoseMgKg"]])
+          SM_MRHD <- HED/(Data[["Clinical Information"]][["MRHD"]][["MRHDMgKg"]])
+          
           if (input$MgKg==F) {
             HED <- HED*Data[['Clinical Information']][['HumanWeight']]
+            SM_start <- HED/(Data[["Clinical Information"]][["Start Dose"]][["StartDose"]])
+            SM_MRHD <- HED/(Data[["Clinical Information"]][["MRHD"]][["MRHD"]])
+            
           }
+        } else if (input$SMbasis=='Cmax') {
+          humanDose <- Data[['Clinical Information']][[input$humanDosing]][[paste0(humanDoseName,input$SMbasis)]]
+          HED <- Dose
+          SM_start <- HED/(Data[["Clinical Information"]][["Start Dose"]][["StartDoseCmax"]])
+          SM_MRHD <- HED/(Data[["Clinical Information"]][["MRHD"]][["MRHDCmax"]])
+          
         } else {
           humanDose <- Data[['Clinical Information']][[input$humanDosing]][[paste0(humanDoseName,input$SMbasis)]]
           HED <- Dose
+          SM_start <- HED/(Data[["Clinical Information"]][["Start Dose"]][["StartDoseAUC"]])
+          SM_MRHD <- HED/(Data[["Clinical Information"]][["MRHD"]][["MRHDAUC"]])
+          
         }
+        
+        
+        
+        
         plotData[i, "HED_value"]<- round(HED, digits = 2) ##for table 03
         plotData[i, "SM"] <- round(HED/humanDose, 2)
+        plotData[i, "SM_start_dose"] <- round(SM_start, digits = 2)
+        plotData[i, "SM_MRHD"] <- round(SM_MRHD, digits = 2)
       }
     }
     
@@ -867,13 +891,16 @@ server <- function(input,output,session) {
     
     plotData_03 <- calculateSM()
     plotData_03 <- plotData_03 %>% 
-      select( Study,NOAEL, Dose, SM , HED_value, Cmax, AUC ) %>% 
+      select( Study,NOAEL, Dose, SM , HED_value, Cmax, AUC , SM_start_dose, SM_MRHD) %>% 
       mutate(Study = as.factor(Study)) %>% 
       unique() %>% 
       filter(NOAEL == TRUE) %>% 
       select(-NOAEL) %>% 
-      dplyr::rename( HED = HED_value, NOAEL = Dose) %>% 
-      dplyr::mutate('Starting Dose' = NA, MRHD = NA) # have to change
+      dplyr::rename( HED = HED_value, "NOAEL (mg/kg/day)" = Dose,
+                     "Cmax (ng/ml)" = Cmax, "AUC (ng*h/ml)" = AUC, 
+                     "Safety Margin at Starting Dose" = SM_start_dose,
+                     "Safety Margin at MRHD" = SM_MRHD)
+      #dplyr::mutate('Starting Dose' = NA, MRHD = NA) # have to change
     plotData_03
     
   })
