@@ -3,6 +3,7 @@ library(ggplot2)
 library(stringr)
 library(htmltools)
 library(shinydashboard)
+library(shinycssloaders)
 
 library(tidyverse)
 library(ggstance)
@@ -735,7 +736,14 @@ server <- function(input,output,session) {
                                   "}"),
 
                                 rowsGroup = list(0,1,2))) %>%
-      formatStyle(columns = colnames(plotData_tab), `font-size` = "18px")
+      formatStyle(columns = colnames(plotData_tab), `font-size` = "18px") %>% 
+      formatStyle(
+        "Clinical Safety Margin",
+        background = styleColorBar(plotData_tab$"Clinical Safety Margin", 'steelblue'),
+        backgroundSize = '100% 90%',
+        backgroundRepeat = 'no-repeat',
+        backgroundPosition = 'center')
+    
     path <- "yousuf" # folder containing dataTables.rowsGroup.js
     dep <- htmltools::htmlDependency(
       "RowsGroup", "2.0.0",
@@ -1282,7 +1290,13 @@ ui <- dashboardPage(
   dashboardHeader(title="Nonclinical Summary Tool",titleWidth = 250),
   
   dashboardSidebar(width = 250,
-                   sidebarMenuOutput('menu')
+                   sidebarMenuOutput('menu'),
+                   tags$head(
+                     tags$style(
+                       HTML(".sidebar {height: 94vh; overflow-y: auto;}")
+                     )
+                   )
+                   
   ),
   
   dashboardBody(
@@ -1310,7 +1324,7 @@ ui <- dashboardPage(
                  selectInput("NOAEL_choices", "NOAEL", choices = c("ALL", "NOAEL", "ALL but NOAEL"),
                              selected = "ALL"),
                  br(),
-                 plotlyOutput('figure')
+                 withSpinner(plotlyOutput('figure'))
         ),
         
         
