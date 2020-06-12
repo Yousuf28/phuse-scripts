@@ -906,6 +906,7 @@ server <- function(input,output,session) {
       select(-NOAEL) %>% 
       dplyr::rename( HED = HED_value, "NOAEL (mg/kg/day)" = Dose,
                      "Cmax (ng/ml)" = Cmax, "AUC (ng*h/ml)" = AUC, 
+                     "Safety Margin" = SM,
                      "Safety Margin at Starting Dose" = SM_start_dose,
                      "Safety Margin at MRHD" = SM_MRHD)
       #dplyr::mutate('Starting Dose' = NA, MRHD = NA) # have to change
@@ -1063,8 +1064,8 @@ server <- function(input,output,session) {
       
     
     if (nrow(plotData)>0) {
-      plotData$Study <- factor(plotData$Study,levels=rev(input$displayStudies))
-      plotData_p$Study <- factor(plotData_p$Study,levels=rev(input$displayStudies))
+      plotData$Study <- factor(plotData$Study,levels= input$displayStudies)
+      plotData_p$Study <- factor(plotData_p$Study,levels= input$displayStudies)
       plotData$DoseLabel <- factor(paste(plotData$Dose,'mg/kg/day'),levels=unique(paste(plotData$Dose,'mg/kg/day'))[order(unique(as.numeric(plotData$Dose),decreasing=F))])
       maxFindings <- 1
       for (doseFinding in plotData$doseFindings) {
