@@ -431,7 +431,7 @@ server <- function(input,output,session) {
   })
   
   # findings with severity -----
-  
+
   output$Findings <- renderUI({
     req(input$selectStudy)
     if (input$selectStudy=='New Study') {
@@ -451,10 +451,14 @@ server <- function(input,output,session) {
               if ((i %% numerator == 2+j)|((i %% numerator == 0)&(j==input$nDoses))) {
                 selectInput(inputId = paste0('Severity',I,'_',j),label = paste0('Select Severity at Dose ',j,' (',input[[paste0('dose',j)]],' mg/kg/day)'),
                             choices = c('Absent','Present','Minimal','Mild','Moderate','Marked','Severe'))
+            # lapply(1:input$nDoses, function(j) {
+            #   if ((i %% numerator == 2+j)|((i %% numerator == 0)&(j==input$nDoses))) {
+            #     selectInput(inputId = paste0('Severity',I,'_',j),label = paste0('Select Severity at Dose ',j,' (',input[[paste0('dose',j)]],' mg/kg/day)'),
+            #                 choices = c('Absent','Present','Minimal','Mild','Moderate','Marked','Severe'))
               }
             })
-            
-            
+
+
           }
             # } else if (i %% numerator == 4) {
           #   selectInput(inputId = paste0('Severity',I,'_2'),label = paste0('Select Severity at Dose ',I),
@@ -463,9 +467,9 @@ server <- function(input,output,session) {
           #   selectInput(inputId = paste0('Severity',I,'_3'),label = paste0('Select Severity at Dose ',I),
           #               choices = c('Absent','Present','Minimal','Mild','Moderate','Marked','Severe'))
           # }
-          
-          
-          
+
+
+
           # else {
           #   doseLevels <- NULL
           #   for (i in seq(input$nDoses)) {
@@ -513,7 +517,7 @@ server <- function(input,output,session) {
               }
             }
           }
-         
+
                # } else {
           #   doseLevels <- NULL
           #   for (i in seq(input$nDoses)) {
@@ -534,16 +538,71 @@ server <- function(input,output,session) {
     }
   })
   
+  # output$Findings <- renderUI({
+  #   req(input$selectStudy)
+  #   if (input$selectStudy=='New Study') {
+  #     if (input$nFindings>0) {
+  #       numerator <- 2 + input$nDoses
+  #       lapply(1:(numerator*input$nFindings), function(i) {
+  #         I <- ceiling(i/numerator)
+  #         if (i %% numerator == 1) {
+  #           textInput(paste0('Finding',I),paste0('Finding ',I,':'))
+  #         } else if (i %% numerator == 2) {
+  #           radioButtons(paste0('Reversibility',I),'Reversibility:',
+  #                        choiceNames=c('Reversible [Rev]','Not Reversible [NR]',
+  #                                      'Partially Reversible [PR]','Not Assessed'),
+  #                        choiceValues=c('[Rev]','[NR]','[PR]',''))
+  #         } else {
+  #           lapply(1:input$nDoses, function(j) {
+  #             if ((i %% numerator == 2+j)|((i %% numerator == 0)&(j==input$nDoses))) {
+  #               selectInput(inputId = paste0('Severity',I,'_',j),label = paste0('Select Severity at Dose ',j,' (',input[[paste0('dose',j)]],' mg/kg/day)'),
+  #                           choices = c('Absent','Present','Minimal','Mild','Moderate','Marked','Severe'))
+  #             }
+  #           })
+  #         }
+  #       })
+  #     }
+  #   } else {
+  #     Data <- getData()
+  #     studyData <- Data[['Nonclinical Information']][[input$selectStudy]]
+  #     if (input$nFindings>0) {
+  #       numerator <- 2 + input$nDoses
+  #       lapply(1:(3*input$nFindings), function(i) {
+  #         I <- ceiling(i/numerator)
+  #         if (i %% numerator == 1) {
+  #           textInput(paste0('Finding',I),paste0('Finding ',I,':'),
+  #                     studyData$Findings[[paste0('Finding',I)]]$Finding)
+  #         } else if (i %% numerator == 2) {
+  #           radioButtons(paste0('Reversibility',I),'Reversibility:',
+  #                        choiceNames=c('Reversible [Rev]','Not Reversible [NR]',
+  #                                      'Partially Reversible [PR]','Not Assessed'),
+  #                        choiceValues=c('[Rev]','[NR]','[PR]',''),
+  #                        selected=studyData$Findings[[paste0('Finding',I)]]$Reversibility)
+  #         } else {
+  #           lapply(1:input$nDoses, function(j) {
+  #             if ((i %% numerator == 2+j)|((i %% numerator == 0)&(j==input$nDoses))) {
+  #               selectInput(inputId = paste0('Severity',I,'_',j),label = paste0('Select Severity at Dose ',j,' (',input[[paste0('dose',j)]],' mg/kg/day)'),
+  #                           choices = c('Absent','Present','Minimal','Mild','Moderate','Marked','Severe'))
+  #             }
+  #           })
+  #         }
+  #       })
+  #     }
+  #   }
+  # })
+  
+  
+  
   # Create PlotData (changed) -----
   
 
   
  getPlotData <- reactive({
   Data <- getData()
-  plotData <- data.frame(matrix(ncol = 17 ))
+  plotData <- data.frame(matrix(ncol = 18 ))
   column_names <- c("Study", "Species", "Months", "Dose_num", "Dose", 
                     "NOAEL", "Cmax", "AUC", "Findings",
-                    "Reversibility", "Severity", "Value", "Value_order", "SM", "HED_value", "SM_start_dose", "SM_MRHD")
+                    "Reversibility", "Severity", "Value", "Value_order", "SM", "HED_value", "SM_start_dose", "SM_MRHD", "noael_value")
   colnames(plotData) <- column_names
   
   
@@ -573,6 +632,7 @@ server <- function(input,output,session) {
           plotData[count, "HED_value"] <- NA
           plotData[count, "SM_start_dose"] <- NA
           plotData[count, "SM_MRHD"] <- NA
+          plotData[count, "noael_value"] <- NA
           
           count <- count+1
           
@@ -592,15 +652,13 @@ server <- function(input,output,session) {
   plotData$Rev[plotData$Rev == "PR"] <- "Partially Revesible"
   
   plotData <- plotData[which(plotData$Study %in% input$displayStudies),]
-  
 
-  
-  
   return(plotData)
   
 })
  
-   
+ 
+    
 
   
   output$humanDosing <- renderUI({
@@ -621,11 +679,47 @@ server <- function(input,output,session) {
     }
     selectInput('humanDosing','Select Human Dose:',choices=clinDosingNames)
   })
+  
+  
+  
+  ## 
+  
+  filter_NOAEL <- reactive({
+    
+    df_plot <- getPlotData()
+   
+    count <- 0
+
+    for (i in unique(df_plot$Study)){
+
+      ind <- which(df_plot$Study == i)
+      study <- df_plot[ind,]
+      row_num <- nrow(study)
+
+
+      for (j in seq(nrow(study))) {
+
+        dose <- study$Dose[which(study$NOAEL == TRUE)]
+        dose <- unique(dose)
+        k <- count+j
+        df_plot[k, "noael_value"] <- dose
+
+      }
+
+      count <- count +row_num
+    }
+    
+    df_plot
+
+  })
+  
+   #observeEvent(filter_NOAEL(), {print(filter_NOAEL())})
+  
 # ## calculate safety margin (SM) ------
 #
   calculateSM <- reactive({
     Data <- getData()
-    plotData <- getPlotData()
+    plotData <- filter_NOAEL()
     # HED_value <- NULL
     # SM <- NULL
     if (nrow(plotData)>0) {
@@ -804,10 +898,11 @@ server <- function(input,output,session) {
     
     plotData_tab <- calculateSM()
     plotData_tab <- plotData_tab %>% 
-      dplyr::select(Study, Dose, NOAEL, Cmax, AUC, SM, Findings) %>% 
+      dplyr::select(Study, Dose, NOAEL, Cmax, AUC, SM, Findings, Severity) %>% 
       mutate(Findings = as.factor(Findings),
              Study = as.factor(Study)) %>% 
              filter(NOAEL == TRUE) %>% 
+             filter(Severity != "Absent") %>% 
              dplyr::select(-NOAEL) %>%
           #group_by(Findings, Rev, Study) %>%
              dplyr::arrange(Study, Dose)
@@ -833,10 +928,10 @@ server <- function(input,output,session) {
                                 initComplete = JS(
                                   "function(settings, json) {",
                                   "$(this.api().table().header()).css({'background-color': '#000', 'color': '#fff'});",
-                                  "}"),
-                                rowsGroup = list(0,1,2,3,4,5)
-                              )) %>% 
-      formatStyle(columns = colnames(plotData_tab), `font-size` = "18px")
+                                  "}")))
+      #                           rowsGroup = list(0,1,2,3,4,5)
+      #                         )) %>% 
+      # formatStyle(columns = colnames(plotData_tab), `font-size` = "18px")
     
     path <- "yousuf" # folder containing dataTables.rowsGroup.js
     dep <- htmltools::htmlDependency(
@@ -1027,32 +1122,78 @@ server <- function(input,output,session) {
   plotHeight <- function() {
     plotData <- calculateSM()
     nStudies <- length(unique(plotData$Study))
-    plotHeight <- as.numeric(250*nStudies)
+    if (nStudies < 2){
+      plotHeight <- as.numeric(350*nStudies)
+    } else {
+      plotHeight <- as.numeric(250*nStudies)
+      }
   }
   
+  # y_limit <- function() {
+  #   y_axis <- calculateSM()
+  #   y_max <-as.numeric(max(y_axis$Value_order))
+  #   y_min <- as.numeric(min(y_axis$Value_order))
+  #   
+  # }
+
+   
 
 ## Figure in UI
   filtered_plot <- reactive({
     if (input$NOAEL_choices == "ALL") {
       plot_data <- calculateSM()
-    } else if (input$NOAEL_choices == "NOAEL") {
+    } else if (input$NOAEL_choices == "Less than or equal to NOAEL") {
         
         plot_data <- calculateSM()
         plot_data <- plot_data %>% 
-          dplyr::filter(NOAEL == TRUE)
+          dplyr::filter(Dose <= noael_value)
  } else {
    plot_data <- calculateSM()
    plot_data <- plot_data %>% 
-     dplyr::filter(NOAEL == FALSE)
+     dplyr::filter(Dose > noael_value)
     }
     
     plot_data
   })
   
 
+  
+  
   output$figure <- renderPlotly({
-    plotData <- filtered_plot()
     
+    plotData <- filtered_plot()
+
+      axis_limit <- calculateSM()
+      SM_max <- max(axis_limit$SM)
+      y_max <- as.numeric(max(axis_limit$Value_order)) +1
+      q_y_max <- as.numeric(max(axis_limit$Value_order))
+      #y_min <- as.numeric(min(axis_limit$Value_order)) -1
+      
+      # p plot tile height and weight
+      if (SM_max < 400) {
+        p_tile_width <- 0.35
+        p_tile_height <- 0.65
+      } else {
+        p_tile_width <- 0.45
+        p_tile_height <- 0.7
+
+      }
+      
+      # 
+      # p_tile_width <- 0.45
+      # p_tile_height <- 0.70
+      
+      finding_count <- length(unique(axis_limit$Findings))
+      
+      # if (finding_count < 3) {
+      #   q_col_width <- 0.2
+      # } else {
+      #   q_col_width <- 0.9
+      # }
+      # q_col_width <- 0.9
+      
+      
+
     ## plotdata for p plot (changed) ----
     plotData_p <- plotData
     plotData_p <- plotData_p %>% 
@@ -1088,26 +1229,36 @@ server <- function(input,output,session) {
                                   levels= c('Absent','Present','Minimal', 'Mild',
                                             'Moderate', 'Marked', 'Severe'), ordered = TRUE)
       
-      color_manual <- c('transparent','grey','#feb24c','#fd8d3c','#fc4e2a','#e31a1c','#b10026')
+      #color_manual <- c('transparent','grey','#feb24c','#fd8d3c','#fc4e2a','#e31a1c','#b10026')
+      color_manual <- c('Absent' = 'transparent',
+                        'Present' = 'grey',
+                        'Minimal' = '#feb24c',
+                        'Mild' = '#fd8d3c',
+                        'Moderate' = '#fc4e2a',
+                        'Marked' = '#e31a1c',
+                        'Severe' = '#b10026')
 
-# order of study need to be fixed
   
       
 # # Study vs safety margin plot  (changed) -------
       color_NOAEL <- c("TRUE" = "#239B56", "FALSE" = "black")
       
+
+      
       
       p <- ggplot(plotData_p)+
         geom_tile(aes (x = SM, y = Value_order, fill = NOAEL, text =paste("SM: ", SM)), 
-                  color = "transparent", width = 0.40, height = 0.65)+
+                  color = "transparent", width = p_tile_width, height = p_tile_height)+
         geom_text(aes(x = SM, y = Value_order, label = paste(Dose, " mg/kg/day"), text = paste("SM:", SM)), #DoseLabel changed
                   color = "white", fontface = "bold")+
-        scale_x_log10(limits = c(min(plotData_p$SM/2), max(plotData_p$SM*2)),sec.axis = dup_axis())+
+        scale_x_log10(limits = c(min(axis_limit$SM/2), max(axis_limit$SM*2)),sec.axis = dup_axis())+
         scale_fill_manual(values = color_NOAEL)+
+        ylim(0,y_max)+
         facet_grid( Study ~ .)+
         labs( title = "Summary of Toxicology Studies")+
         theme_bw(base_size=12)+
-        theme(axis.title.y = element_blank(),
+        theme(
+          axis.title.y = element_blank(),
               axis.ticks.y= element_blank(),
               axis.text.y = element_blank(),
               panel.grid.major = element_blank(),
@@ -1127,7 +1278,8 @@ server <- function(input,output,session) {
                   color = 'white',
                   fontface = 'bold',
                   position = position_stack(vjust = 0.5, reverse = TRUE))+
-        scale_y_discrete(position = 'right')+
+        #scale_y_discrete(position = 'right')+
+        ylim(0, q_y_max)+
         scale_fill_manual(values = color_manual)+
         facet_grid(Study ~ ., scales = 'free')+
         theme_bw(base_size=12)+
@@ -1319,10 +1471,11 @@ ui <- dashboardPage(
       condition='input.selectData!="blankData.rds"',
       tabsetPanel(
         
+        
         tabPanel('Figure',
                  actionButton('refreshPlot','Refresh Plot'),
                  br(),
-                 selectInput("NOAEL_choices", "NOAEL", choices = c("ALL", "NOAEL", "ALL but NOAEL"),
+                 selectInput("NOAEL_choices", "NOAEL", choices = c("ALL", "Less than or equal to NOAEL", "Greater than NOAEL"),
                              selected = "ALL"),
                  br(),
                  withSpinner(plotlyOutput('figure'))
