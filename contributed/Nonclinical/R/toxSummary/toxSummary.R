@@ -451,49 +451,18 @@ server <- function(input,output,session) {
               if ((i %% numerator == 2+j)|((i %% numerator == 0)&(j==input$nDoses))) {
                 selectInput(inputId = paste0('Severity',I,'_',j),label = paste0('Select Severity at Dose ',j,' (',input[[paste0('dose',j)]],' mg/kg/day)'),
                             choices = c('Absent','Present','Minimal','Mild','Moderate','Marked','Severe'))
-            # lapply(1:input$nDoses, function(j) {
-            #   if ((i %% numerator == 2+j)|((i %% numerator == 0)&(j==input$nDoses))) {
-            #     selectInput(inputId = paste0('Severity',I,'_',j),label = paste0('Select Severity at Dose ',j,' (',input[[paste0('dose',j)]],' mg/kg/day)'),
-            #                 choices = c('Absent','Present','Minimal','Mild','Moderate','Marked','Severe'))
               }
             })
-
-
           }
-            # } else if (i %% numerator == 4) {
-          #   selectInput(inputId = paste0('Severity',I,'_2'),label = paste0('Select Severity at Dose ',I),
-          #               choices = c('Absent','Present','Minimal','Mild','Moderate','Marked','Severe'))
-          # } else {
-          #   selectInput(inputId = paste0('Severity',I,'_3'),label = paste0('Select Severity at Dose ',I),
-          #               choices = c('Absent','Present','Minimal','Mild','Moderate','Marked','Severe'))
-          # }
-
-
-
-          # else {
-          #   doseLevels <- NULL
-          #   for (i in seq(input$nDoses)) {
-          #     if (i %% numerator == 2+i)
-          #     doseLevel <- input[[paste0('dose',i)]]
-          #     if (is.null(doseLevel)) {
-          #       doseLevels[i] <- ''
-          #     } else {
-          #       doseLevels[i] <- doseLevel
-          #     }
-          #   }
-            # checkboxGroupInput(paste0('FindingDoses',I),'Dose Levels:',
-            #                    choiceNames = paste(doseLevels,'mg/kg/day'),
-            #                    choiceValues = doseLevels,
-            #                    selected = NULL)
-          # }
         })
       }
     } else {
       Data <- getData()
       studyData <- Data[['Nonclinical Information']][[input$selectStudy]]
+      print(studyData)
       if (input$nFindings>0) {
         numerator <- 2 + input$nDoses
-        lapply(1:(3*input$nFindings), function(i) {
+        lapply(1:(numerator*input$nFindings), function(i) {
           I <- ceiling(i/numerator)
           if (i %% numerator == 1) {
             textInput(paste0('Finding',I),paste0('Finding ',I,':'),
@@ -505,34 +474,14 @@ server <- function(input,output,session) {
                          choiceValues=c('[Rev]','[NR]','[PR]',''),
                          selected=studyData$Findings[[paste0('Finding',I)]]$Reversibility)
           } else {
-            for (j in seq(input$nDoses)) {
-              print(i%%numerator)
-              print(j+2)
-              if ((i %% numerator == 2+j)|(i%%numerator==0)) {
-                print('worked!')
-                selectInput(paste0('Severity',I,'_',j),paste0('Select Severity at Dose ',I),
-                            choices = c('Absent','Present','Minimal',
-                                        'Mild','Moderate','Marked','Severe'))
-                break
+            lapply(1:input$nDoses, function(j) {
+              if ((i %% numerator == 2+j)|((i %% numerator == 0)&(j==input$nDoses))) {
+                selectInput(inputId = paste0('Severity',I,'_',j),label = paste0('Select Severity at Dose ',j,' (',input[[paste0('dose',j)]],' mg/kg/day)'),
+                            choices = c('Absent','Present','Minimal','Mild','Moderate','Marked','Severe'),
+                            selected=studyData$Findings[[paste0('Finding',I)]]$Severity[[paste0('Dose',j)]])
               }
-            }
+            })
           }
-
-               # } else {
-          #   doseLevels <- NULL
-          #   for (i in seq(input$nDoses)) {
-          #     doseLevel <- input[[paste0('dose',i)]]
-          #     if (is.null(doseLevel)) {
-          #       doseLevels[i] <- ''
-          #     } else {
-          #       doseLevels[i] <- doseLevel
-          #     }
-          #   }
-          #   checkboxGroupInput(paste0('FindingDoses',I),'Dose Levels:',
-          #                      choiceNames = paste(doseLevels,'mg/kg/day'),
-          #                      choiceValues = doseLevels,
-          #                      selected = studyData$Findings[[paste0('Finding',I)]]$FindingDoses)
-          # }
         })
       }
     }
