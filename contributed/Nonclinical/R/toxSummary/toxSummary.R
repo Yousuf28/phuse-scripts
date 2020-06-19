@@ -1119,26 +1119,58 @@ server <- function(input,output,session) {
       #y_min <- as.numeric(min(axis_limit$Value_order)) -1
       
       # p plot tile height and weight
-      if (SM_max < 400) {
-        p_tile_width <- 0.35
-        p_tile_height <- 0.65
+      
+      # if (SM_max <= 3) {
+      #   p_tile_width <- 0.17
+      #   p_tile_height <- 0.65
+      # } else if (SM_max > 5 & SM_max <= 100) {
+      #   p_tile_width <- 0.45
+      #   p_tile_height <- 0.65
+      # } else if (SM_max > 5 & SM_max <= 100) {
+      #   p_tile_width <- 0.45
+      #   p_tile_height <- 0.65
+      # } else if (SM_max > 100 & SM_max <= 500) {
+      #   p_tile_width <- 0.60
+      #   p_tile_height <- 0.65
+      # } else if (SM_max > 500 & SM_max <= 1000) {
+      #   p_tile_width <- 0.65
+      #   p_tile_height <- 0.65
+      # } else {
+      #   p_tile_width <- log10(SM_max)*(0.158)
+      #   p_tile_height <- 0.7
+      # }
+      
+      # SM_max_log <- log10(SM_max)
+      # p_tile_width <- 0.11641234+ (SM_max_log * 0.23974182) - ((SM_max_log)^2 * 0.04421635) + ((SM_max_log)^3 * 0.00547356)
+      
+      if (SM_max < 2) {
+        p_tile_width <- 0.21
       } else {
-        p_tile_width <- 0.45
-        p_tile_height <- 0.7
-
+        x <- log10(SM_max)
+        p_tile_width <- 0.218141 + (x *0.177231) + ( (x)^2 * 0.000962 )- ((x)^3 *0.012639) + ((x)^4 * 0.002044 )
       }
+
+      
+     
+       # 
+      # if (SM_max < 2) {
+      #   p_tile_width <- 0.21
+      # } else {
+      #   p_tile_width <- p_tile_y
+      # }
       
       # 
       # p_tile_width <- 0.45
-      # p_tile_height <- 0.70
+      p_tile_height <- 0.70
       
-      finding_count <- length(unique(axis_limit$Findings))
+      finding_count <- length(unique(plotData$Findings))
       
-      # if (finding_count < 3) {
-      #   q_col_width <- 0.2
-      # } else {
-      #   q_col_width <- 0.9
-      # }
+      
+      if (finding_count < 4) {
+        q_col_width <- 0.2* finding_count
+      } else {
+        q_col_width <- 0.9
+      }
       # q_col_width <- 0.9
       
       
@@ -1221,7 +1253,8 @@ server <- function(input,output,session) {
       q <- ggplot(plotData)+
         geom_col(aes(x= Findings, y = Value, fill = Severity, group = Dose),
                  position = position_stack(reverse = TRUE),
-                 color = 'transparent')+
+                 color = 'transparent',
+                 width = q_col_width)+
         geom_text(aes(x = Findings, y = Value, label = Dose, group = Dose, text = Findings),
                   size = 4,
                   color = 'white',
